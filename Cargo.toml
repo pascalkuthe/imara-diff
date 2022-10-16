@@ -1,0 +1,45 @@
+[package]
+name = "imara-diff"
+version = "0.1.0"
+edition = "2021"
+authors = ["pascalkuthe <pascalkuthe@semimod.de>"]
+rust-version = "1.61"
+license = "Apache-2.0"
+
+description = "Minimal terminfo libary."
+repository  = "https://github.com/pascalkuthe/imara-diff"
+keywords = ["diff", "difference", "myers", "compare", "changes"]
+readme = "README.md"
+exclude = [
+    "tests",
+    "bench_data",
+    "plt.py",
+]
+[badges]
+maintenance = { status = "actively-developed" }
+
+[lib]
+doctest = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ahash = "0.8.0"
+hashbrown = { version = "0.12.3", features = ["raw"] }
+
+[features]
+default = ["unified_diff"]
+unified_diff = []
+
+[dev-dependencies]
+criterion = "0.4.0"
+expect-test = "1.4.0"
+git-repository = "0.25.0"
+similar = { version = "2.2.0", features = ["bytes"] }
+
+[profile.release]
+debug = true
+
+[[bench]]
+name = "git_repo"
+harness = false
