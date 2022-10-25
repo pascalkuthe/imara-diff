@@ -1,11 +1,10 @@
 use std::fs::read_to_string;
 use std::mem::swap;
-use std::ops::Range;
 use std::path::PathBuf;
 
 use crate::intern::InternedInput;
 use crate::sink::Counter;
-use crate::{diff, Algorithm, Sink, UnifiedDiffBuilder};
+use crate::{diff, Algorithm,  UnifiedDiffBuilder};
 use expect_test::{expect, expect_file};
 
 #[test]
