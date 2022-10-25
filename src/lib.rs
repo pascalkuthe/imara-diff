@@ -66,7 +66,14 @@ pub enum Algorithm {
     ///
     /// Compared to myer algorithm, the histogram diff algorithm is more focused on providing
     /// human readable diffs instead of minimal diffs. In practice this means that the edit-sequences
-    /// produced by the histogram diff are often slightly longer then those produced by myers algorithm.
+    /// produced by the histogram diff are often longer then those produced by myers algorithm.
+    ///
+    /// The heuristic used by the histogram diff does not work well for inputs with small (often repeated)
+    /// tokens. For example **character diffs do not work well** as most (english) text is madeup of
+    /// a fairly small set of characters. The `Histogram` algorithm will automatically these cases and
+    /// fallback to myers algorithm. However this detection has a nontrivial overhead, so
+    /// if its known upfront that the sort of tokens is very small `Myers` algorithm should
+    /// be used instead.
     Histogram,
     /// An implementation of the linear space variant of
     /// [Myers  `O((N+M)D)` algorithm](http://www.xmailserver.org/diff2.pdf).

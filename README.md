@@ -1,13 +1,14 @@
 # imara-diff
 
 [![crates.io](https://img.shields.io/crates/v/imara-diff?style=flat-square)](https://crates.io/crates/imara-diff)
+[![crates.io](https://img.shields.io/docsrs/imara-diff?style=flat-square)](https://docs.rs/imara-diff/latest/imara_diff/)
 ![crates.io](https://img.shields.io/crates/l/imara-diff?style=flat-square)
 
 Imara-diff is a solid (imara in swahili) diff library for rust.
 Solid refers to the fact that imara-diff provides very good runtime performance even
 in pathologic cases so that your application never appears to freeze while waiting on a diff.
 The performance improvements are achieved using battle tested heuristics used in gnu-diff and git
-that are known to yield fast runtime and performance.
+that are known to perform well while still providing good results. 
 
 Imara-diff is also designed to be flexible so that it can be used with arbitrary collections and
 not just lists and strings and even allows reusing large parts of the computation when
@@ -22,6 +23,19 @@ Myers algorithm has been enhanced with preprocessing and multiple heuristics to 
 cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
 The histogram algorithm was originally ported from git but has been heavily optimized.
 The **histogram algorithm outperforms myers diff** by 10% - 100% across a **wide variety of workloads**.
+
+## Limitations
+
+Even with the optimizations in this crate, performing a large diff without any tokenization (like character diff for a string) does not perform well.
+To work around this problem a diff of the entire file with large tokens (like lines for a string) can be performed first.
+The `Sink` implementation can then perform fine-grained diff on changed regions.
+Note that this fine-grained diff should not be performed for pure insertions, pure deletions and very large changes.
+
+In an effort to improve performance, `imara-diff` makes heavy use of pointer compression.
+That means that it can only support files with at most `2^31 - 2` tokens.
+This should be rarely an issue in practice for textual diffs, because most (large) real-world files 
+have an average line-length of at least 8.
+That means that this limitation only becomes a problem for files above 16GB while performing line-diffs.
 
 ## Benchmarks
 
