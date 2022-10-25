@@ -16,13 +16,13 @@ comparing the same file to multiple different files.
 
 Imara-diff provides two diff algorithms:
 
-* The linear-space variant of the well known [**myer** algorithm](http://www.xmailserver.org/diff2.pdf) 
-* The **histogram** algorithm which variant of the patience diff algorithm.
+* The linear-space variant of the well known [Myers algorithm](http://www.xmailserver.org/diff2.pdf) 
+* The **Histogram** algorithm which variant of the patience diff algorithm.
 
 Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological 
-cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
+cases to avoid quadratic time complexity and closely matches the behavior of gnu-diff and git.
 The histogram algorithm was originally ported from git but has been heavily optimized.
-The **histogram algorithm outperforms myers diff** by 10% - 100% across a **wide variety of workloads**.
+The **Histogram algorithm outperforms Myers algorithm** by 10% - 100% across a **wide variety of workloads**.
 
 ## Limitations
 
@@ -40,7 +40,7 @@ That means that this limitation only becomes a problem for files above 16GB whil
 ## Benchmarks
 
 The most used diffing libraries in the rust ecosystem are [similar](https://crates.io/crates/similar) and [dissimilar](https://crates.io/crates/similar).
-The fastest diff implementation both of these offer is a simple implementation of the myer algorithm
+The fastest diff implementation both of these offer is a simple implementation of Myers algorithm
 without preprocessing or additional heuristics.
 As these implementations are very similar only `similar` was included in the benchmark.
 
@@ -52,14 +52,14 @@ Therefore, the tree diff of the last 30 commit before the tag (equivalent of `gi
 
 The benchmark measures the runtime of performing a **line diff** between the collected files.
 As a measure of complexity for each change `(M + N) D` was used where `M` and `N` are the lengths of the two compared files
-and `D` is the length of the edit script required to transform these files into each other (determined with myers algorithm).
+and `D` is the length of the edit script required to transform these files into each other (determined with Myers algorithm).
 This complexity measure is used to divide the changes into 10 badges.
 The time to compute the line diffs in each badge was benchmarked.
 
 The plots below show the runtime for each **average** complexity (runtime is normalized by the number of diffs).
 Note that these plots are shown in logarithmic scale due to the large runtime of `similar` for complex diffs.
-Furthermore, to better highlight the performance of the histogram algorithm, the speedup of the histogram algorithm
-compared to the myers algorithm is shown separately.
+Furthermore, to better highlight the performance of the Histogram algorithm, the speedup of the Histogram algorithm
+compared to the Myers algorithm is shown separately.
 
 * [Linux](#Linux)
 * [Rust](#Rust)
