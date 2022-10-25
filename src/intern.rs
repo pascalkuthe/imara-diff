@@ -16,6 +16,18 @@ use std::ops::Index;
 #[repr(transparent)]
 pub struct Token(pub u32);
 
+impl From<u32> for Token {
+    fn from(token: u32) -> Self {
+        Token(token)
+    }
+}
+
+impl From<Token> for u32 {
+    fn from(token: Token) -> Self {
+        token.0
+    }
+}
+
 pub trait TokenSource {
     type Token: Hash + Eq;
     type Tokenizer: Iterator<Item = Self::Token>;
@@ -53,16 +65,25 @@ impl<T: Eq + Hash> InternedInput<T> {
         res
     }
 
-    pub fn update_before(&mut self, file: impl Iterator<Item = T>) {
+    /// replaces `self.before` wtih the iterned Tokens yielded by `input`
+    /// Note that this does not erase any tokens from the interner and might therefore be considered
+    /// a memory leak. If this function is called often over a long_running process
+    /// consider clearing the interner with [`clear`](crate::intern::Interner::clear).
+    pub fn update_before(&mut self, input: impl Iterator<Item = T>) {
         self.before.clear();
         self.before
-            .extend(file.map(|token| self.interner.intern(token)));
+            .extend(input.map(|token| self.interner.intern(token)));
     }
 
-    pub fn update_after(&mut self, file: impl Iterator<Item = T>) {
+    /// replaces `self.before` wtih the iterned Tokens yielded by `input`
+    /// Note that this does not erase any tokens from the interner and might therefore be considered
+    /// a memory leak. If this function is called often over a long_running process
+    /// consider clearing the interner with [`clear`](crate::intern::Interner::clear) or
+    /// [`erase_tokens_after`](crate::intern::Interner::erase_tokens_after).
+    pub fn update_after(&mut self, input: impl Iterator<Item = T>) {
         self.after.clear();
         self.after
-            .extend(file.map(|token| self.interner.intern(token)));
+            .extend(input.map(|token| self.interner.intern(token)));
     }
 
     pub fn clear(&mut self) {
@@ -81,24 +102,28 @@ pub struct Interner<T: Hash + Eq> {
 }
 
 impl<T: Hash + Eq> Interner<T> {
-    ///
-    pub fn new_for_token_source<S: TokenSource<Token = T>>(file1: &S, file2: &S) -> Self {
-        Self::new(file1.estimate_tokens() as usize + file2.estimate_tokens() as usize)
+    /// Create an Interner with an intial capacity calculated by calling 
+    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
+        Self::new(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
 
-    pub fn new(files_len: usize) -> Self {
+    /// Create an Interner with inital capacity `capacity`.
+    pub fn new(capacity: usize) -> Interner<T> {
         Interner {
-            tokens: Vec::with_capacity(files_len),
-            table: RawTable::with_capacity(files_len),
+            tokens: Vec::with_capacity(capacity),
+            table: RawTable::with_capacity(capacity),
             hasher: RandomState::new(),
         }
     }
 
+    /// Remove all interned tokens
     pub fn clear(&mut self) {
         self.table.clear_no_drop();
         self.tokens.clear();
     }
-
+    
+   /// Intern `token` and return a the interned integer
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
         if let Some(&token) = self
@@ -116,8 +141,31 @@ impl<T: Hash + Eq> Interner<T> {
         }
     }
 
+    /// Returns to total number of **distinct** tokens currently interned.
     pub fn num_tokens(&self) -> u32 {
         self.tokens.len() as u32
+    }
+    
+    /// Erases `first_erased_token` and any tokens interned afterwards from the interner.
+    pub fn erase_tokens_after(&mut self, first_erased_token: Token) {
+        assert!(first_erased_token.0 <= self.tokens.len() as u32);
+        let retained = first_erased_token.0 as usize;
+        let erased = self.tokens.len() - retained;
+        if retained <= erased {
+            self.table.clear_no_drop();
+            // safety, we assert that retained is smaller then the table size so the table will never have to grow
+            unsafe {
+                for (i, token) in self.tokens[0..retained].iter().enumerate() {
+                    self.table
+                        .insert_no_grow(self.hasher.hash_one(token), Token(i as u32));
+                }
+            }
+        } else {
+            for (i, token) in self.tokens[retained..].iter().enumerate() {
+                self.table
+                    .erase_entry(self.hasher.hash_one(token), |token| token.0 == i as u32);
+            }
+        }
     }
 }
 
