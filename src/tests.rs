@@ -2,10 +2,11 @@ use std::fs::read_to_string;
 use std::mem::swap;
 use std::path::PathBuf;
 
+use expect_test::{expect, expect_file};
+
 use crate::intern::InternedInput;
 use crate::sink::Counter;
-use crate::{diff, Algorithm,  UnifiedDiffBuilder};
-use expect_test::{expect, expect_file};
+use crate::{diff, Algorithm, UnifiedDiffBuilder};
 
 #[test]
 fn replace() {
@@ -107,10 +108,7 @@ pub fn project_root() -> PathBuf {
     let dir = env!("CARGO_MANIFEST_DIR");
     let mut res = PathBuf::from(dir);
     while !res.join("README.md").exists() {
-        res = res
-            .parent()
-            .expect("reached fs root without finding project root")
-            .to_owned()
+        res = res.parent().expect("reached fs root without finding project root").to_owned()
     }
     res
 }

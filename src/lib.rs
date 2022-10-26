@@ -11,25 +11,151 @@
 //! Imara-diff provides two diff algorithms:
 //!
 //! * The linear-space variant of the well known [**myer** algorithm](http://www.xmailserver.org/diff2.pdf)
-//! * The **histogram** algorithm which variant of the patience diff algorithm.
+//! * The **Histogram** algorithm which variant of the patience diff algorithm.
 //!
 //! Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological
 //! cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
-//! The histogram algorithm was originally ported from git but has been heavily optimized.
-//! The **histogram algorithm outperforms myers diff** by 10% - 100% across a **wide variety of workloads**.
+//! The Histogram algorithm was originally ported from git but has been heavily optimized.
+//! The **Histogram algorithm outperforms Myers diff** by 10% - 100% across a **wide variety of workloads**.
 //!
 //! Imara-diffs algorithms have been benchmarked over a wide variety of real-world code.
 //! For example while comparing multiple different linux kernel it performs up to 30 times better than the `similar` crate:
-//!
-//!
 #![cfg_attr(doc, doc=concat!("<img width=\"600\" class=\"figure\" src=\"data:image/svg+xml;base64,", include_str!("../plots/linux_comparison.svg.base64"), "\"></img>"))]
+//!
+//! # Api Overview
+//!
+//! Imara-diff provides the [`UnifiedDiffBuilder`](crate::UnifiedDiffBuilder) for building
+//! a human-redable diff similar to the output of `git diff` or `diff -u`.
+//! This makes building a tool similar to gnu diff easy:
+//!
+//! ```
+//! use imara_diff::intern::InternedInput;
+//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+//!
+//! let before = r#"fn foo() -> Bar {
+//!     let mut foo = 2;
+//!     foo *= 50;
+//!     println!("hello world")
+//! }"#;
+//!
+//! let after = r#"// lorem ipsum
+//! fn foo() -> Bar {
+//!     let mut foo = 2;
+//!     foo *= 50;
+//!     println!("hello world");
+//!     println!("{foo}");
+//! }
+//! // foo
+//! "#;
+//!
+//! let input = InternedInput::new(before, after);
+//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input));
+//! assert_eq!(
+//!     diff,
+//!     r#"@@ -1,5 +1,8 @@
+//! +// lorem ipsum
+//!  fn foo() -> Bar {
+//!      let mut foo = 2;
+//!      foo *= 50;
+//! -    println!("hello world")
+//! +    println!("hello world");
+//! +    println!("{foo}");
+//!  }
+//! +// foo
+//! "#
+//! );
+//! ```
+//!
+//! If you want to process the diff in some way you can provide your own implementation of [`Sink`](crate::sink::Sink).
+//! For closures [`Sink`](crate::sink::Sink) is already implemented, so simple [`Sink`]s can be easily added:
+//!
+//! ```
+//! use std::ops::Range;
+//!
+//! use imara_diff::intern::InternedInput;
+//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+//!
+//! let before = r#"fn foo() -> Bar {
+//!     let mut foo = 2;
+//!     foo *= 50;
+//!     println!("hello world")
+//! }"#;
+//!
+//! let after = r#"// lorem ipsum
+//! fn foo() -> Bar {
+//!     let mut foo = 2;
+//!     foo *= 50;
+//!     println!("hello world");
+//!     println!("{foo}");
+//! }
+//! // foo
+//! "#;
+//!
+//! let mut insertions = Vec::new();
+//! let mut removals = Vec::new();
+//! let mut replacements = Vec::new();
+//!
+//! let input = InternedInput::new(before, after);
+//! let sink = |before: Range<u32>, after: Range<u32>| {
+//!     let hunk_before: Vec<_> = input.before[before.start as usize..before.end as usize]
+//!         .iter()
+//!         .map(|&line| input.interner[line])
+//!         .collect();
+//!     let hunk_after: Vec<_> = input.after[after.start as usize..after.end as usize]
+//!         .iter()
+//!         .map(|&line| input.interner[line])
+//!         .collect();
+//!     if hunk_after.is_empty() {
+//!         removals.push(hunk_before)
+//!     } else if hunk_before.is_empty() {
+//!         insertions.push(hunk_after)
+//!     } else {
+//!         replacements.push((hunk_before, hunk_after))
+//!     }
+//! };
+//! let diff = diff(Algorithm::Histogram, &input, sink);
+//! assert_eq!(&insertions, &[vec!["// lorem ipsum"], vec!["// foo"]]);
+//! assert!(removals.is_empty());
+//! assert_eq!(
+//!     &replacements,
+//!     &[(
+//!         vec!["    println!(\"hello world\")"],
+//!         vec!["    println!(\"hello world\");", "    println!(\"{foo}\");"]
+//!     )]
+//! );
+//! ```
+//!
+//! For `&str` and `&[u8]` imara-diff will compute a line diff by default.
+//! To perform diffs of different tokenizations and collections you can implement the [`TokenSource`](crate::intern::TokenSource) trait.
+//! For example the imara-diff provides an alternative tokenziser for line-diffs that includes the line terminator in the line:
+//!
+//! ```
+//! use imara_diff::intern::InternedInput;
+//! use imara_diff::sink::Counter;
+//! use imara_diff::sources::lines_with_terminator;
+//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+//!
+//! let before = "foo";
+//! let after = "foo\n";
+//!
+//! let input = InternedInput::new(before, after);
+//! let changes = diff(Algorithm::Histogram, &input, Counter::default());
+//! assert_eq!(changes.insertions, 0);
+//! assert_eq!(changes.removals, 0);
+//!
+//! let input = InternedInput::new(lines_with_terminator(before), lines_with_terminator(after));
+//! let changes = diff(Algorithm::Histogram, &input, Counter::default());
+//! assert_eq!(changes.insertions, 1);
+//! assert_eq!(changes.removals, 1);
+//! ```
+
 use std::hash::Hash;
 
-use crate::intern::{InternedInput, Token, TokenSource};
-pub use crate::sink::Sink;
 #[cfg(feature = "unified_diff")]
 pub use unified_diff::UnifiedDiffBuilder;
 
+use crate::intern::{InternedInput, Token, TokenSource};
+pub use crate::sink::Sink;
 mod histogram;
 pub mod intern;
 mod myers;
@@ -52,26 +178,25 @@ pub enum Algorithm {
     /// Just like the `patience` diff algorithm, this algorithm usually produces
     /// more human readable output then myers algorithm.
     /// However compared to the `patience` diff algorithm (which is slower then myers algorithm),
-    /// the histogram algorithm performs much better.
+    /// the Histogram algorithm performs much better.
     ///
     /// The implementation here was originally ported from `git` but has been significantly
     /// modified to improve performance.
     /// As a result it consistently **performs better then myers algorithm** (5%-100%) over
     /// a wide variety of test data. For example a benchmark of diffing linux kernel commits is shown below:
-    ///
     #[cfg_attr(doc, doc=concat!("<img width=\"600\" class=\"figure\" src=\"data:image/svg+xml;base64,", include_str!("../plots/linux_speedup.svg.base64"), "\"></img>"))]
     ///
     /// For pathological subsequences that only contain highly repeating tokens (64+ occurrences)
-    /// the algorithm falls back on myers algorithm (with heuristics) to avoid quadratic behavior.
+    /// the algorithm falls back on Myers algorithm (with heuristics) to avoid quadratic behavior.
     ///
-    /// Compared to myer algorithm, the histogram diff algorithm is more focused on providing
+    /// Compared to Myers algorithm, the Histogram diff algorithm is more focused on providing
     /// human readable diffs instead of minimal diffs. In practice this means that the edit-sequences
-    /// produced by the histogram diff are often longer then those produced by myers algorithm.
+    /// produced by the histogram diff are often longer then those produced by Myers algorithm.
     ///
     /// The heuristic used by the histogram diff does not work well for inputs with small (often repeated)
     /// tokens. For example **character diffs do not work well** as most (english) text is madeup of
     /// a fairly small set of characters. The `Histogram` algorithm will automatically these cases and
-    /// fallback to myers algorithm. However this detection has a nontrivial overhead, so
+    /// fallback to Myers algorithm. However this detection has a nontrivial overhead, so
     /// if its known upfront that the sort of tokens is very small `Myers` algorithm should
     /// be used instead.
     Histogram,
@@ -89,7 +214,7 @@ pub enum Algorithm {
     /// If that property is vital to you, use the `MyersMinimal` algorithm instead.
     ///
     /// The implementation (including the preprocessing) are mostly
-    /// ported from `git` and `gnu-diff` where myers diff is used
+    /// ported from `git` and `gnu-diff` where Myers algorithm is used
     /// as the default diff algorithm.
     /// Therefore the used heuristics have been heavily battle tested and
     /// are known to behave well over a large variety of inputs
@@ -119,13 +244,7 @@ pub fn diff<S: Sink, T: Eq + Hash>(
     input: &InternedInput<T>,
     sink: S,
 ) -> S::Out {
-    diff_with_tokens(
-        algorithm,
-        &input.before,
-        &input.after,
-        input.interner.num_tokens(),
-        sink,
-    )
+    diff_with_tokens(algorithm, &input.before, &input.after, input.interner.num_tokens(), sink)
 }
 
 /// Computes an edit-script that transforms `before` into `after` using
@@ -138,16 +257,8 @@ pub fn diff_with_tokens<S: Sink>(
     num_tokens: u32,
     sink: S,
 ) -> S::Out {
-    assert!(
-        before.len() < i32::MAX as usize,
-        "imara-diff only supports up to {} tokens",
-        i32::MAX
-    );
-    assert!(
-        after.len() < i32::MAX as usize,
-        "imara-diff only supports up to {} tokens",
-        i32::MAX
-    );
+    assert!(before.len() < i32::MAX as usize, "imara-diff only supports up to {} tokens", i32::MAX);
+    assert!(after.len() < i32::MAX as usize, "imara-diff only supports up to {} tokens", i32::MAX);
     match algorithm {
         Algorithm::Histogram => histogram::diff(before, after, num_tokens, sink),
         Algorithm::Myers => myers::diff(before, after, num_tokens, sink, false),

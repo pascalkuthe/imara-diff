@@ -13,7 +13,7 @@ pub trait Sink: Sized {
     /// That means that for two subsequenct  calls `process_change(before1, after1)` and `process_change(before2, after2)`
     /// the following always holds:
     ///
-    /// ``` rust
+    /// ``` no_compile
     /// assert!(before1.end < before2.start);
     /// assert!(after1.end < after2.start);
     /// ```
@@ -76,11 +76,7 @@ pub struct Counter<T> {
 
 impl<S: Sink> Counter<S> {
     pub fn new(sink: S) -> Self {
-        Self {
-            insertions: 0,
-            removals: 0,
-            wrapped: sink,
-        }
+        Self { insertions: 0, removals: 0, wrapped: sink }
     }
 }
 

@@ -14,11 +14,7 @@ pub struct FileSlice<'a> {
 
 impl<'a> FileSlice<'a> {
     pub fn new(file: &'a mut PreprocessedFile) -> Self {
-        Self {
-            tokens: &file.tokens,
-            indices: &file.indices,
-            changed: &mut file.is_changed,
-        }
+        Self { tokens: &file.tokens, indices: &file.indices, changed: &mut file.is_changed }
     }
 
     pub fn mark_changed(&mut self) {
@@ -28,11 +24,7 @@ impl<'a> FileSlice<'a> {
     }
 
     pub fn borrow(&mut self) -> FileSlice {
-        FileSlice {
-            tokens: self.tokens,
-            changed: self.changed,
-            indices: self.indices,
-        }
+        FileSlice { tokens: self.tokens, changed: self.changed, indices: self.indices }
     }
 
     pub fn slice<R: RangeBounds<u32>>(self, range: R) -> Self {

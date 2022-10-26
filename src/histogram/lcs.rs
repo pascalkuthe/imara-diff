@@ -6,11 +6,8 @@ pub(super) fn find_lcs(
     after: &[Token],
     histogram: &mut Histogram,
 ) -> Option<Lcs> {
-    let mut search = LcsSearch {
-        lcs: Lcs::default(),
-        min_occurances: MAX_CHAIN_LEN + 1,
-        found_cs: false,
-    };
+    let mut search =
+        LcsSearch { lcs: Lcs::default(), min_occurances: MAX_CHAIN_LEN + 1, found_cs: false };
     search.run(before, after, histogram);
     if search.success() {
         Some(search.lcs)
@@ -110,11 +107,7 @@ impl LcsSearch {
             debug_assert_eq!(len, end1 - start1);
             if self.lcs.len < len || self.min_occurances > occurances {
                 self.min_occurances = occurances;
-                self.lcs = Lcs {
-                    before_start: start1,
-                    after_start: start2,
-                    len,
-                };
+                self.lcs = Lcs { before_start: start1, after_start: start2, len };
             }
 
             loop {

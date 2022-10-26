@@ -125,10 +125,7 @@ where
         self.update_pos(before.start, before.end);
         self.before_hunk_len += before.end - before.start;
         self.after_hunk_len += after.end - after.start;
-        self.print_tokens(
-            &self.before[before.start as usize..before.end as usize],
-            '-',
-        );
+        self.print_tokens(&self.before[before.start as usize..before.end as usize], '-');
         self.print_tokens(&self.after[after.start as usize..after.end as usize], '+');
     }
 
