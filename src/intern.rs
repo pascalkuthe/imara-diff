@@ -157,7 +157,7 @@ impl<T: Hash + Eq> Interner<T> {
             }
         } else {
             for (i, token) in self.tokens[retained..].iter().enumerate() {
-                self.table.erase_entry(self.hasher.hash_one(token), |token| token.0 == i as u32);
+                self.table.erase_entry(self.hasher.hash_one(token), |token| token.0  == (retained + i) as u32);
             }
         }
         self.tokens.truncate(first_erased_token.0 as usize);
