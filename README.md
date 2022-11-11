@@ -4,17 +4,17 @@
 [![crates.io](https://img.shields.io/docsrs/imara-diff?style=flat-square)](https://docs.rs/imara-diff/latest/imara_diff/)
 ![crates.io](https://img.shields.io/crates/l/imara-diff?style=flat-square)
 
-Imara-diff is a solid (imara in swahili) diff library for rust.
+`imara-diff` is a solid (imara in swahili) diff library for rust.
 Solid refers to the fact that imara-diff provides very good runtime performance even
 in pathologic cases so that your application never appears to freeze while waiting on a diff.
 The performance improvements are achieved using battle tested heuristics used in gnu-diff and git
 that are known to perform well while still providing good results. 
 
-Imara-diff is also designed to be flexible so that it can be used with arbitrary collections and
+`imara-diff` is also designed to be flexible so that it can be used with arbitrary collections and
 not just lists and strings and even allows reusing large parts of the computation when
 comparing the same file to multiple different files.
 
-Imara-diff provides two diff algorithms:
+`imara-diff` provides two diff algorithms:
 
 * The linear-space variant of the well known [Myers algorithm](http://www.xmailserver.org/diff2.pdf) 
 * The **Histogram** algorithm which variant of the patience diff algorithm.
@@ -61,12 +61,12 @@ Note that these plots are shown in logarithmic scale due to the large runtime of
 Furthermore, to better highlight the performance of the Histogram algorithm, the speedup of the Histogram algorithm
 compared to the Myers algorithm is shown separately.
 
-* [Linux](#Linux)
-* [Rust](#Rust)
-* [VSCode](#VSCode)
-* [Helix](#Helix)
+* [Linux](###Linux)
+* [Rust](###Rust)
+* [VSCode](###VSCode)
+* [Helix](###Helix)
 
-# Linux
+### Linux
 
 The sourcecode of the linux kernel.
 
@@ -76,7 +76,7 @@ The sourcecode of the linux kernel.
 <img src='plots/linux_comparison.svg' width="700">
 <img src='plots/linux_speedup.svg' width="700">
 
-# Rust
+### Rust
 
 The sourcecode of the rust compiler, standard library and various related tooling.
 
@@ -86,7 +86,7 @@ The sourcecode of the rust compiler, standard library and various related toolin
 <img src='plots/rust_comparison.svg' width="700">
 <img src='plots/rust_speedup.svg' width="700">
 
-# VScode
+### VScode
 
 The sourcecode of the vscode editor.
 
@@ -96,7 +96,7 @@ The sourcecode of the vscode editor.
 <img src='plots/vscode_comparison.svg' width="700">
 <img src='plots/vscode_speedup.svg' width="700">
 
-# Helix
+### Helix
 
 The sourcecode of the helix editor.
 
@@ -105,3 +105,20 @@ The sourcecode of the helix editor.
 
 <img src='plots/helix_comparison.svg' width="700">
 <img src='plots/helix_speedup.svg' width="700">
+
+
+## Stability Policy
+
+`imara-diff` uses [Semantic Versioning (SemVar)](https://semver.org/).
+All non-breaking changes to the public rust API will cause a minor `SemVar` bump.
+All breaking changes to to the public rust API will cause a major `SemVar` bump.
+Changes in the produced diffs are also considered breaking changes if the produced diff was valid.
+If the produced diff was invalid the change will be considered a bugfix.
+
+Additionally all changes to the minimum stable rust version (MSRV) are also considered breaking changes.
+The current **MSRV is 1.61**.
+`imara-diff` will roughly follow the MSRV of Firefox (stable) to remain
+compatible many platforms that try to include its latest version.
+To predict future changes to the MSRV the [Firefox documentation] can be consulted.
+
+[Firefox documentation]: https://firefox-source-docs.mozilla.org/writing-rust-code/update-policy.html
