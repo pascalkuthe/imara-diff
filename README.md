@@ -39,7 +39,7 @@ That means that this limitation only becomes a problem for files above 16GB whil
 
 ## Benchmarks
 
-The most used diffing libraries in the rust ecosystem are [similar](https://crates.io/crates/similar) and [dissimilar](https://crates.io/crates/similar).
+The most used diffing libraries in the rust ecosystem are [similar](https://crates.io/crates/similar) and [dissimilar](https://crates.io/crates/dissimilar).
 The fastest diff implementation both of these offer is a simple implementation of Myers algorithm
 without preprocessing or additional heuristics.
 As these implementations are very similar only `similar` was included in the benchmark.
