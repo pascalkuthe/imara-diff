@@ -25,7 +25,7 @@
 //! # Api Overview
 //!
 //! Imara-diff provides the [`UnifiedDiffBuilder`](crate::UnifiedDiffBuilder) for building
-//! a human-redable diff similar to the output of `git diff` or `diff -u`.
+//! a human-readable diff similar to the output of `git diff` or `diff -u`.
 //! This makes building a tool similar to gnu diff easy:
 //!
 //! ```
