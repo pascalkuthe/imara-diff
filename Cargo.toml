@@ -22,7 +22,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 ahash = "0.8.0"
-hashbrown = { version = "0.12.3", default-features = false, features = ["raw", "inline-more"] }
+hashbrown = { version = "0.13", default-features = false, features = ["raw", "inline-more"] }
 
 [features]
 default = ["unified_diff"]
