@@ -5,14 +5,14 @@ use criterion::measurement::Measurement;
 use criterion::{
     black_box, criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use git_repository::object::tree::diff::{Action, Change};
-use git_repository::Id;
+use gix::object::tree::diff::{Action, Change};
+use gix::Id;
 use imara_diff::intern::InternedInput;
 use imara_diff::sink::Counter;
 use imara_diff::Algorithm;
 
 fn extract_diff(change: &Change) -> Option<(Vec<u8>, Vec<u8>)> {
-    use git_repository::object::tree::diff::change::Event::Modification;
+    use gix::object::tree::diff::change::Event::Modification;
 
     let (previous_id, id) = match change.event {
         Modification { previous_entry_mode, previous_id, entry_mode, id }
@@ -34,6 +34,7 @@ fn git_tree_diff(from: Id, to: Id, diffs: &mut Vec<(Vec<u8>, Vec<u8>, usize)>) {
     let to_tree = to.object().unwrap().peel_to_tree().unwrap();
     from_tree
         .changes()
+        .unwrap()
         .track_filename()
         .for_each_to_obtain_tree(&to_tree, |change| -> Result<_, Infallible> {
             if let Some((old, new)) = extract_diff(&change) {
@@ -59,7 +60,7 @@ pub fn project_root() -> PathBuf {
 
 fn bench_repo(c: &mut Criterion, name: &str, tag2: &str, tag1: &str, num_commits: usize) {
     let path = project_root().join("bench_data").join("repos").join(name);
-    let repo = git_repository::open(path).unwrap();
+    let repo = gix::open(path).unwrap();
     let tag1 = repo.find_reference(tag1).unwrap().into_fully_peeled_id().unwrap();
     let tag2 = repo.find_reference(tag2).unwrap().into_fully_peeled_id().unwrap();
     let mut diffs = Vec::new();
