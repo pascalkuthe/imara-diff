@@ -6,7 +6,7 @@ authors = ["pascalkuthe <pascalkuthe@semimod.de>"]
 rust-version = "1.61"
 license = "Apache-2.0"
 
-description = "Minimal terminfo libary."
+description = "Minimal diff library"
 repository  = "https://github.com/pascalkuthe/imara-diff"
 keywords = ["diff", "difference", "myers", "compare", "changes"]
 readme = "README.md"
