@@ -46,7 +46,7 @@ impl Histogram {
     }
 
     fn num_token_occurances(&self, token: Token) -> u32 {
-        self.token_occurances[token.0 as usize].len(&self.pool) as u32
+        self.token_occurances[token.0 as usize].len(&self.pool)
     }
 
     fn populate(&mut self, file: &[Token]) {

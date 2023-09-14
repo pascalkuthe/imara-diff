@@ -43,6 +43,6 @@ pub fn strip_common_postfix(file1: &mut &[Token], file2: &mut &[Token]) -> u32 {
 }
 
 pub fn sqrt(val: usize) -> u32 {
-    let nbits = (usize::BITS as u32 - val.leading_zeros()) / 2;
+    let nbits = (usize::BITS - val.leading_zeros()) / 2;
     1 << nbits
 }

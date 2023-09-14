@@ -54,7 +54,7 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
     pub fn pos_at_diagonal(&self, diagonal: i32) -> (i32, i32) {
         self.bounds_check(diagonal);
         let token_idx1 = unsafe { self.kvec.as_ptr().offset(diagonal as isize).read() };
-        let token_idx2 = (token_idx1 as i32 - diagonal) as i32;
+        let token_idx2 = token_idx1 - diagonal;
         (token_idx1, token_idx2)
     }
 
@@ -110,7 +110,7 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
                 self.x_pos_at_diagonal(k + 1)
             };
 
-            let mut token_idx2 = (token_idx1 as i32 - k) as i32;
+            let mut token_idx2 = token_idx1 - k;
             let off = if BACK {
                 if token_idx1 > 0 && token_idx2 > 0 {
                     let tokens1 = &file1.tokens[..token_idx1 as usize];

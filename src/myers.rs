@@ -52,7 +52,7 @@ impl Drop for Myers {
 
 impl Myers {
     fn new(len1: usize, len2: usize) -> Self {
-        let ndiags = len1 + len2 as usize + 3;
+        let ndiags = len1 + len2 + 3;
         let kvec = Box::leak(vec![0; 2 * ndiags + 2].into_boxed_slice());
         let kforward = NonNull::from(&mut kvec[len2 + 1]);
         let kbackward = NonNull::from(&mut kvec[ndiags + len2 + 1]);

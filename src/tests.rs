@@ -121,16 +121,15 @@ fn hand_checked_udiffs() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
         let test_dir = project_root().join("tests");
-        for file in ["helix_syntax.rs"] {
-            let path_before = test_dir.join(format!("{file}.before"));
-            let path_after = test_dir.join(format!("{file}.after"));
-            let path_diff = test_dir.join(format!("{file}.{algorithm:?}.diff"));
-            let before = read_to_string(path_before).unwrap();
-            let after = read_to_string(path_after).unwrap();
-            let input = InternedInput::new(&*before, &*after);
-            let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
-            expect_file![path_diff].assert_eq(&diff);
-        }
+        let file = "helix_syntax.rs";
+        let path_before = test_dir.join(format!("{file}.before"));
+        let path_after = test_dir.join(format!("{file}.after"));
+        let path_diff = test_dir.join(format!("{file}.{algorithm:?}.diff"));
+        let before = read_to_string(path_before).unwrap();
+        let after = read_to_string(path_after).unwrap();
+        let input = InternedInput::new(&*before, &*after);
+        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        expect_file![path_diff].assert_eq(&diff);
     }
 }
 
