@@ -21,21 +21,21 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 ahash = "0.8.0"
-hashbrown = { version = "0.12.3", default-features = false, features = ["raw", "inline-more"] }
+hashbrown = { version = "0.14", default-features = false, features = ["raw", "inline-more"] }
 
 [features]
 default = ["unified_diff"]
 unified_diff = []
 
 [dev-dependencies]
-criterion = "0.4.0"
+# criterion = "0.4.0"
 expect-test = "1.4.0"
-git-repository = "0.25.0"
-similar = { version = "2.2.0", features = ["bytes"] }
+# git-repository = "0.25.0"
+# similar = { version = "2.2.0", features = ["bytes"] }
 
 [profile.release]
 debug = true
 
-[[bench]]
-name = "git_repo"
-harness = false
+# [[bench]]
+# name = "git_repo"
+# harness = false
