@@ -21,7 +21,13 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
         let dmin = -(file2.len() as i32);
         let dmax = file1.len() as i32;
         let kmid = if BACK { dmin + dmax } else { 0 };
-        let mut res = Self { kvec: data, kmin: kmid, kmax: kmid, dmin, dmax };
+        let mut res = Self {
+            kvec: data,
+            kmin: kmid,
+            kmax: kmid,
+            dmin,
+            dmax,
+        };
         let init = if BACK { file1.len() as i32 } else { 0 };
         res.write_xpos_at_diagonal(kmid, init);
         res
@@ -135,7 +141,10 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
             self.write_xpos_at_diagonal(k, token_idx1);
 
             if f(k, token_idx1) {
-                return Some(SearchResult::Found { token_idx1, token_idx2 });
+                return Some(SearchResult::Found {
+                    token_idx1,
+                    token_idx2,
+                });
             }
 
             k -= 2;

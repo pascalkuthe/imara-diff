@@ -64,7 +64,11 @@ pub struct ListHandle {
 /// Create an empty list.
 impl Default for ListHandle {
     fn default() -> Self {
-        Self { index: 0, generation: 0, len: 0 }
+        Self {
+            index: 0,
+            generation: 0,
+            len: 0,
+        }
     }
 }
 

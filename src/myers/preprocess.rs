@@ -94,7 +94,12 @@ impl PreprocessedFile {
     fn new(offset: u32, token_diff: &[Occurances], tokens: &[Token]) -> PreprocessedFile {
         let mut changed = vec![false; tokens.len()];
         let (tokens, indices) = prune_unmatched_tokens(tokens, token_diff, &mut changed);
-        PreprocessedFile { offset, is_changed: changed, indices, tokens }
+        PreprocessedFile {
+            offset,
+            is_changed: changed,
+            indices,
+            tokens,
+        }
     }
 }
 

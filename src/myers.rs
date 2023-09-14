@@ -56,7 +56,12 @@ impl Myers {
         let kvec = Box::leak(vec![0; 2 * ndiags + 2].into_boxed_slice());
         let kforward = NonNull::from(&mut kvec[len2 + 1]);
         let kbackward = NonNull::from(&mut kvec[ndiags + len2 + 1]);
-        Self { kvec: kvec.into(), kforward, kbackward, max_cost: sqrt(ndiags).max(MAX_COST_MIN) }
+        Self {
+            kvec: kvec.into(),
+            kforward,
+            kbackward,
+            max_cost: sqrt(ndiags).max(MAX_COST_MIN),
+        }
     }
 
     fn run<'f>(&mut self, mut file1: FileSlice<'f>, mut file2: FileSlice<'f>, mut need_min: bool) {
@@ -110,7 +115,10 @@ impl Myers {
                 }) {
                     match res {
                         SearchResult::Snake => found_snake = true,
-                        SearchResult::Found { token_idx1, token_idx2 } => {
+                        SearchResult::Found {
+                            token_idx1,
+                            token_idx2,
+                        } => {
                             return Split {
                                 token_idx1,
                                 token_idx2,
@@ -131,7 +139,10 @@ impl Myers {
                 }) {
                     match res {
                         SearchResult::Snake => found_snake = true,
-                        SearchResult::Found { token_idx1, token_idx2 } => {
+                        SearchResult::Found {
+                            token_idx1,
+                            token_idx2,
+                        } => {
                             return Split {
                                 token_idx1,
                                 token_idx2,

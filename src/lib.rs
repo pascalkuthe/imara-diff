@@ -244,7 +244,13 @@ pub fn diff<S: Sink, T: Eq + Hash>(
     input: &InternedInput<T>,
     sink: S,
 ) -> S::Out {
-    diff_with_tokens(algorithm, &input.before, &input.after, input.interner.num_tokens(), sink)
+    diff_with_tokens(
+        algorithm,
+        &input.before,
+        &input.after,
+        input.interner.num_tokens(),
+        sink,
+    )
 }
 
 /// Computes an edit-script that transforms `before` into `after` using
@@ -257,8 +263,16 @@ pub fn diff_with_tokens<S: Sink>(
     num_tokens: u32,
     sink: S,
 ) -> S::Out {
-    assert!(before.len() < i32::MAX as usize, "imara-diff only supports up to {} tokens", i32::MAX);
-    assert!(after.len() < i32::MAX as usize, "imara-diff only supports up to {} tokens", i32::MAX);
+    assert!(
+        before.len() < i32::MAX as usize,
+        "imara-diff only supports up to {} tokens",
+        i32::MAX
+    );
+    assert!(
+        after.len() < i32::MAX as usize,
+        "imara-diff only supports up to {} tokens",
+        i32::MAX
+    );
     match algorithm {
         Algorithm::Histogram => histogram::diff(before, after, num_tokens, sink),
         Algorithm::Myers => myers::diff(before, after, num_tokens, sink, false),

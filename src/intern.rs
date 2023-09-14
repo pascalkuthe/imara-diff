@@ -72,7 +72,8 @@ impl<T: Eq + Hash> InternedInput<T> {
     /// consider clearing the interner with [`clear`](crate::intern::Interner::clear).
     pub fn update_before(&mut self, input: impl Iterator<Item = T>) {
         self.before.clear();
-        self.before.extend(input.map(|token| self.interner.intern(token)));
+        self.before
+            .extend(input.map(|token| self.interner.intern(token)));
     }
 
     /// replaces `self.before` wtih the iterned Tokens yielded by `input`
@@ -82,7 +83,8 @@ impl<T: Eq + Hash> InternedInput<T> {
     /// [`erase_tokens_after`](crate::intern::Interner::erase_tokens_after).
     pub fn update_after(&mut self, input: impl Iterator<Item = T>) {
         self.after.clear();
-        self.after.extend(input.map(|token| self.interner.intern(token)));
+        self.after
+            .extend(input.map(|token| self.interner.intern(token)));
     }
 
     pub fn clear(&mut self) {
@@ -125,7 +127,10 @@ impl<T: Hash + Eq> Interner<T> {
     /// Intern `token` and return a the interned integer
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
-        if let Some(&token) = self.table.get(hash, |&it| self.tokens[it.0 as usize] == token) {
+        if let Some(&token) = self
+            .table
+            .get(hash, |&it| self.tokens[it.0 as usize] == token)
+        {
             token
         } else {
             let interned = Token(self.tokens.len() as u32);
@@ -152,12 +157,16 @@ impl<T: Hash + Eq> Interner<T> {
             // safety, we assert that retained is smaller then the table size so the table will never have to grow
             unsafe {
                 for (i, token) in self.tokens[0..retained].iter().enumerate() {
-                    self.table.insert_no_grow(self.hasher.hash_one(token), Token(i as u32));
+                    self.table
+                        .insert_no_grow(self.hasher.hash_one(token), Token(i as u32));
                 }
             }
         } else {
             for (i, token) in self.tokens[retained..].iter().enumerate() {
-                self.table.erase_entry(self.hasher.hash_one(token), |token| token.0  == (retained + i) as u32);
+                self.table
+                    .erase_entry(self.hasher.hash_one(token), |token| {
+                        token.0 == (retained + i) as u32
+                    });
             }
         }
         self.tokens.truncate(first_erased_token.0 as usize);

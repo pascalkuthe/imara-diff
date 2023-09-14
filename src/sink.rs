@@ -76,7 +76,11 @@ pub struct Counter<T> {
 
 impl<S: Sink> Counter<S> {
     pub fn new(sink: S) -> Self {
-        Self { insertions: 0, removals: 0, wrapped: sink }
+        Self {
+            insertions: 0,
+            removals: 0,
+            wrapped: sink,
+        }
     }
 }
 

@@ -15,11 +15,12 @@ fn extract_diff(change: &Change) -> Option<(Vec<u8>, Vec<u8>)> {
     use git_repository::object::tree::diff::change::Event::Modification;
 
     let (previous_id, id) = match change.event {
-        Modification { previous_entry_mode, previous_id, entry_mode, id }
-            if previous_entry_mode.is_blob() && entry_mode.is_blob() =>
-        {
-            (previous_id, id)
-        }
+        Modification {
+            previous_entry_mode,
+            previous_id,
+            entry_mode,
+            id,
+        } if previous_entry_mode.is_blob() && entry_mode.is_blob() => (previous_id, id),
         _ => return None,
     };
 
@@ -52,7 +53,10 @@ pub fn project_root() -> PathBuf {
     let dir = env!("CARGO_MANIFEST_DIR");
     let mut res = PathBuf::from(dir);
     while !res.join("README.md").exists() {
-        res = res.parent().expect("reached fs root without finding project root").to_owned()
+        res = res
+            .parent()
+            .expect("reached fs root without finding project root")
+            .to_owned()
     }
     res
 }
@@ -60,8 +64,16 @@ pub fn project_root() -> PathBuf {
 fn bench_repo(c: &mut Criterion, name: &str, tag2: &str, tag1: &str, num_commits: usize) {
     let path = project_root().join("bench_data").join("repos").join(name);
     let repo = git_repository::open(path).unwrap();
-    let tag1 = repo.find_reference(tag1).unwrap().into_fully_peeled_id().unwrap();
-    let tag2 = repo.find_reference(tag2).unwrap().into_fully_peeled_id().unwrap();
+    let tag1 = repo
+        .find_reference(tag1)
+        .unwrap()
+        .into_fully_peeled_id()
+        .unwrap();
+    let tag2 = repo
+        .find_reference(tag2)
+        .unwrap()
+        .into_fully_peeled_id()
+        .unwrap();
     let mut diffs = Vec::new();
     git_tree_diff(tag1, tag2, &mut diffs);
     let mut last_commit = tag2;
