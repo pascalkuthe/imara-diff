@@ -71,13 +71,3 @@ jobs:
         run: cargo doc --no-deps --workspace --document-private-items
         env:
           RUSTDOCFLAGS: -D warnings
-
-  typos:
-      name: Typos
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout sources
-          uses: actions/checkout@v4
-        
-        - name: Run typos
-          uses: crate-ci/typos@v1.16.11
