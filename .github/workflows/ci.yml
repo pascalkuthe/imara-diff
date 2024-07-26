@@ -61,6 +61,8 @@ jobs:
 
       - name: Install nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
 
       - uses: Swatinem/rust-cache@v2
 
