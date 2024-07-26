@@ -35,7 +35,7 @@ pub trait Sink: Sized {
     /// to obtain the final diff result
     fn finish(self) -> Self::Out;
 
-    /// Utility method that constructs a [`Counter`](crate::sink::Counter) that tracks the total number
+    /// Utility method that constructs a [`Counter`] that tracks the total number
     /// of inserted and removed tokens in the changes passed to [`process_change`](crate::Sink::process_change).
     fn with_counter(self) -> Counter<Self> {
         Counter::new(self)
@@ -58,7 +58,7 @@ impl Sink for () {
     fn finish(self) -> Self::Out {}
 }
 
-/// A [`Sink`](crate::Sink) which wraps a different sink
+/// A [`Sink`] which wraps a different sink
 /// and counts the number of `removed` and `inserted` [tokens](crate::intern::Token).
 pub struct Counter<T> {
     /// Total number of recorded inserted [`tokens`](crate::intern::Token).
@@ -67,10 +67,10 @@ pub struct Counter<T> {
     /// Total number of recorded inserted [`tokens`](crate::intern::Token).
     /// Computed by summing the lengths of the `after` subsequences pass to [`process_change`](crate::Sink::process_change).
     pub insertions: u32,
-    /// The [`Sink`](crate::Sink) for which the counter records [`tokens`](crate::intern::Token).
+    /// The [`Sink`] for which the counter records [`tokens`](crate::intern::Token).
     /// All calls to [`process_change`](crate::Sink::process_change) are forwarded to the `sink` by the counter.
     /// After [`finish`](crate::Sink::finish) is called, this field contains the output returned by the [`finish`](crate::Sink::finish)
-    /// method of the wrapped [`Sink`](crate::Sink)
+    /// method of the wrapped [`Sink`].
     pub wrapped: T,
 }
 

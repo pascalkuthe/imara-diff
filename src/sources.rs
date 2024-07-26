@@ -3,7 +3,7 @@ use std::str::from_utf8_unchecked;
 
 use crate::TokenSource;
 
-/// Returns a [`TokenSource`](crate::intern::TokenSource) that uses
+/// Returns a [`TokenSource`] that uses
 /// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
 /// not included in the emitted tokens.
 /// This means that changing the newline seperator from `\r\n` to `\n`
@@ -12,7 +12,7 @@ pub fn lines(data: &str) -> Lines<'_, false> {
     Lines(ByteLines(data.as_bytes()))
 }
 
-/// Returns a [`TokenSource`](crate::intern::TokenSource) that uses
+/// Returns a [`TokenSource`] that uses
 /// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
 /// included in the emitted tokens.
 /// This means that changing the newline seperator from `\r\n` to `\n`
@@ -21,7 +21,7 @@ pub fn lines_with_terminator(data: &str) -> Lines<'_, true> {
     Lines(ByteLines(data.as_bytes()))
 }
 
-/// Returns a [`TokenSource`](crate::intern::TokenSource) that uses
+/// Returns a [`TokenSource`] that uses
 /// the lines in `data` as Tokens. A lines is a continous subslice of
 /// `data` which does not contain `\n` (or `\r\n`).
 /// The newline seperator (`\r\n` or `\n`) is not included in the emitted tokens.
@@ -31,7 +31,7 @@ pub fn byte_lines_with_terminator(data: &[u8]) -> ByteLines<'_, true> {
     ByteLines(data)
 }
 
-/// Returns a [`TokenSource`](crate::intern::TokenSource) that uses
+/// Returns a [`TokenSource`] that uses
 /// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
 /// included in the emitted tokens.
 /// This means that changing the newline seperator from `\r\n` to `\n`
@@ -69,8 +69,8 @@ impl<'a> TokenSource for &'a [u8] {
     }
 }
 
-/// A [`TokenSource`](crate::intern::TokenSource) that returns the lines of a `str` as tokens.
-/// See [`lines`](crate::sources::lines) and [`lines_with_terminator`](crate::sources::lines_with_terminator) for details
+/// A [`TokenSource`] that returns the lines of a `str` as tokens.
+/// See [`lines`] and [`lines_with_terminator`] for details
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Lines<'a, const INCLUDE_LINE_TERMINATOR: bool>(ByteLines<'a, INCLUDE_LINE_TERMINATOR>);
 
@@ -99,8 +99,8 @@ impl<'a, const INCLUDE_LINE_TERMINATOR: bool> TokenSource for Lines<'a, INCLUDE_
     }
 }
 
-/// A [`TokenSource`](crate::intern::TokenSource) that returns the lines of a byte slice as tokens.
-/// See [`byte_lines`](crate::sources::lines) and [`byte_lines_with_terminator`](crate::sources::byte_lines_with_terminator) for details
+/// A [`TokenSource`] that returns the lines of a byte slice as tokens.
+/// See [`byte_lines`] and [`byte_lines_with_terminator`] for details
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ByteLines<'a, const INCLUDE_LINE_TERMINATOR: bool>(&'a [u8]);
 

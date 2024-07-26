@@ -12,7 +12,7 @@ use hashbrown::raw::RawTable;
 /// of using the token data directly.
 /// This allows for much better performance by amortizing the cost hashing/equality.
 ///
-/// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`](crate::intern::InternedInput) module.
+/// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Token(pub u32);
@@ -44,7 +44,7 @@ pub trait TokenSource {
 /// of using the token data directly.
 /// This allows for much better performance by amortizing the cost hashing/equality.
 ///
-/// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`](crate::intern::InternedInput) module.
+/// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(Default)]
 pub struct InternedInput<T: Eq + Hash> {
     pub before: Vec<Token>,

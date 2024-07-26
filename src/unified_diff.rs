@@ -5,7 +5,7 @@ use std::ops::Range;
 use crate::intern::{InternedInput, Interner, Token};
 use crate::Sink;
 
-/// A [`Sink`](crate::sink::Sink) that creates a textual diff
+/// A [`Sink`] that creates a textual diff
 /// in the format typically output by git or gnu-diff if the `-u` option is used
 pub struct UnifiedDiffBuilder<'a, W, T>
 where
@@ -31,7 +31,7 @@ where
     T: Hash + Eq + Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
-    /// that will return a [`String`](std::string::String).
+    /// that will return a [`String`].
     pub fn new(input: &'a InternedInput<T>) -> Self {
         Self {
             before_hunk_start: 0,
@@ -54,7 +54,7 @@ where
     T: Hash + Eq + Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
-    /// that will writes it output to the provided implementation of [`Write`](std::fmt::Write).
+    /// that will writes it output to the provided implementation of [`Write`].
     pub fn with_writer(input: &'a InternedInput<T>, writer: W) -> Self {
         Self {
             before_hunk_start: 0,
