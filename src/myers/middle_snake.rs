@@ -16,7 +16,7 @@ pub struct MiddleSnakeSearch<const BACK: bool> {
 
 impl<const BACK: bool> MiddleSnakeSearch<BACK> {
     /// # Safety
-    /// `data` must be valid for reads between `-file1.len()` and `file2.len()`
+    /// `data` must be valid for reads and writes between `-file2.len() - 1` and `file1.len() + 1`
     pub unsafe fn new(data: NonNull<i32>, file1: &FileSlice, file2: &FileSlice) -> Self {
         let dmin = -(file2.len() as i32);
         let dmax = file1.len() as i32;
