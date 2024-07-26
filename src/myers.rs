@@ -53,11 +53,15 @@ impl Drop for Myers {
 impl Myers {
     fn new(len1: usize, len2: usize) -> Self {
         let ndiags = len1 + len2 + 3;
-        let kvec = Box::leak(vec![0; 2 * ndiags + 2].into_boxed_slice());
-        let kforward = NonNull::from(&mut kvec[len2 + 1]);
-        let kbackward = NonNull::from(&mut kvec[ndiags + len2 + 1]);
+        let kvec: *mut [i32] = Box::into_raw(vec![0; 2 * ndiags + 2].into_boxed_slice()).into();
+        let (kforward, kbackward) = unsafe {
+            (
+                NonNull::new_unchecked((kvec as *mut i32).offset((len2 + 1) as isize)),
+                NonNull::new_unchecked((kvec as *mut i32).offset((ndiags + len2 + 1) as isize)),
+            )
+        };
         Self {
-            kvec: kvec.into(),
+            kvec: unsafe { NonNull::new_unchecked(kvec) },
             kforward,
             kbackward,
             max_cost: sqrt(ndiags).max(MAX_COST_MIN),
