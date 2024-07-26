@@ -117,6 +117,7 @@ pub fn project_root() -> PathBuf {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn hand_checked_udiffs() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
@@ -134,6 +135,7 @@ fn hand_checked_udiffs() {
 }
 
 #[test]
+#[cfg(not(miri))]
 fn complex_diffs() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
