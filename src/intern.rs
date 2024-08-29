@@ -94,7 +94,8 @@ impl<T: Eq + Hash> InternedInput<T> {
     }
 }
 
-/// A hastable based interner that allows
+/// A hastable based interner that allows for accessing the hashed tokens returned from a diff
+/// operation
 #[derive(Default)]
 pub struct Interner<T: Hash + Eq> {
     tokens: Vec<T>,
