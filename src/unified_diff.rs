@@ -20,6 +20,7 @@ where
     after_hunk_start: u32,
     before_hunk_len: u32,
     after_hunk_len: u32,
+    ctx_size: u32,
 
     buffer: String,
     dst: W,
@@ -31,7 +32,7 @@ where
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
     /// that will return a [`String`].
-    pub fn new(input: &'a InternedInput<T>) -> Self {
+    pub fn new(input: &'a InternedInput<T>, context_size: Option<u32>) -> Self {
         Self {
             before_hunk_start: 0,
             after_hunk_start: 0,
@@ -43,6 +44,7 @@ where
             before: &input.before,
             after: &input.after,
             pos: 0,
+            ctx_size: context_size.unwrap_or(3),
         }
     }
 }
@@ -54,7 +56,7 @@ where
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
     /// that will writes it output to the provided implementation of [`Write`].
-    pub fn with_writer(input: &'a InternedInput<T>, writer: W) -> Self {
+    pub fn with_writer(input: &'a InternedInput<T>, writer: W, context_size: Option<u32>) -> Self {
         Self {
             before_hunk_start: 0,
             after_hunk_start: 0,
@@ -66,6 +68,7 @@ where
             before: &input.before,
             after: &input.after,
             pos: 0,
+            ctx_size: context_size.unwrap_or(3),
         }
     }
 
@@ -80,7 +83,7 @@ where
             return;
         }
 
-        let end = (self.pos + 3).min(self.before.len() as u32);
+        let end = (self.pos + self.ctx_size).min(self.before.len() as u32);
         self.update_pos(end, end);
 
         writeln!(
@@ -115,11 +118,11 @@ where
     type Out = W;
 
     fn process_change(&mut self, before: Range<u32>, after: Range<u32>) {
-        if before.start - self.pos > 6 {
+        if before.start - self.pos > self.ctx_size {
             self.flush();
-            self.pos = before.start - 3;
+            self.pos = before.start - self.ctx_size;
             self.before_hunk_start = self.pos;
-            self.after_hunk_start = after.start - 3;
+            self.after_hunk_start = after.start - self.ctx_size;
         }
         self.update_pos(before.start, before.end);
         self.before_hunk_len += before.end - before.start;
