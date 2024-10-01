@@ -31,6 +31,7 @@ where
     T: Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
+    /// displaying `context_size` lines of context around each change,
     /// that will return a [`String`].
     pub fn new(input: &'a InternedInput<T>, context_size: Option<u32>) -> Self {
         Self {
@@ -55,6 +56,7 @@ where
     T: Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
+    /// displaying `context_size` lines of context around each change,
     /// that will writes it output to the provided implementation of [`Write`].
     pub fn with_writer(input: &'a InternedInput<T>, writer: W, context_size: Option<u32>) -> Self {
         Self {
