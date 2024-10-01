@@ -28,7 +28,7 @@ fn foo() -> Bar{
     let input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
         expect![[r#"
             @@ -1,5 +1,8 @@
             +const TEST: i32 = 0;
@@ -55,7 +55,7 @@ fn identical_files() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
         let input = InternedInput::new(file, file);
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
         assert_eq!(diff, "");
     }
 }
@@ -76,7 +76,7 @@ fn simple_insert() {
     let mut input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
-        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
         expect![[r#"
           @@ -1,4 +1,5 @@
            fn foo() -> Bar{
@@ -89,7 +89,7 @@ fn simple_insert() {
 
         swap(&mut input.before, &mut input.after);
 
-        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
         expect![[r#"
             @@ -1,5 +1,4 @@
              fn foo() -> Bar{
@@ -129,7 +129,7 @@ fn hand_checked_udiffs() {
         let before = read_to_string(path_before).unwrap();
         let after = read_to_string(path_after).unwrap();
         let input = InternedInput::new(&*before, &*after);
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input));
+        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
         expect_file![path_diff].assert_eq(&diff);
     }
 }

@@ -49,7 +49,7 @@
 //! "#;
 //!
 //! let input = InternedInput::new(before, after);
-//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input));
+//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input, None));
 //! assert_eq!(
 //!     diff,
 //!     r#"@@ -1,5 +1,8 @@

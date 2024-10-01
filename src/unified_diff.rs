@@ -118,7 +118,7 @@ where
     type Out = W;
 
     fn process_change(&mut self, before: Range<u32>, after: Range<u32>) {
-        if before.start - self.pos > self.ctx_size {
+        if before.start - self.pos > 2 * self.ctx_size {
             self.flush();
             self.pos = before.start - self.ctx_size;
             self.before_hunk_start = self.pos;
