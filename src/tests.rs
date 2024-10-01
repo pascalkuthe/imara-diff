@@ -129,8 +129,12 @@ fn hand_checked_udiffs() {
         let before = read_to_string(path_before).unwrap();
         let after = read_to_string(path_after).unwrap();
         let input = InternedInput::new(&*before, &*after);
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
-        expect_file![path_diff].assert_eq(&diff);
+        let diff_res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        expect_file![path_diff].assert_eq(&diff_res);
+        // test with a context of 5 lines
+        let path_diff = test_dir.join(format!("{file}.{algorithm:?}_ctx5.diff"));
+        let diff_res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, Some(5)));
+        expect_file![path_diff].assert_eq(&diff_res);
     }
 }
 
