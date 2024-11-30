@@ -5,12 +5,12 @@ pub trait Sink: Sized {
     type Out;
 
     /// This method is called whenever a diff [`algorithm`](crate::Algorithm)
-    /// finds a change between the two processed input file.
-    /// A change is a continous subsequence of [tokens](crate::intern::Token) `before` that needs
-    /// to be replaced by a different contious subsequence of tokens `after` to construct the seconds file from the first.
+    /// finds a change between the two processed input files.
+    /// A change is a continuous subsequence of [tokens](crate::intern::Token) `before` that needs
+    /// to be replaced by a different continuous subsequence of tokens `after` to construct the second file from the first.
     ///
-    /// These token subsequences are passed to this function in in ** strictly montonically increasing order**.
-    /// That means that for two subsequenct  calls `process_change(before1, after1)` and `process_change(before2, after2)`
+    /// These token subsequences are passed to this function in in ** strictly monotonically increasing order**.
+    /// That means that for two subsequent calls `process_change(before1, after1)` and `process_change(before2, after2)`
     /// the following always holds:
     ///
     /// ``` no_compile
@@ -18,14 +18,14 @@ pub trait Sink: Sized {
     /// assert!(after1.end < after2.start);
     /// ```
     ///
-    /// # Paramters
+    /// # Parameters
     /// - **`before`** - the **position** of the removed token subsequence in the orignal file.
     /// - **`after`** - the **position** of the inserted token subsequence in the destination file.
     ///
     /// # Notes
     ////
-    /// A `Sink` has no function to indicate that  a section of a file remains unchanged.
-    /// However due to the montonically increasing calls, implementations can easily determine
+    /// A `Sink` has no function to indicate that a section of a file remains unchanged.
+    /// However due to the monotonically increasing calls, implementations can easily determine
     /// which subsequences remain unchanged by saving `before.end`/`after.end`.
     /// The range between `before.start`/`after.end` and the previous `before.end`/`after.end`
     /// is always unchanged.
