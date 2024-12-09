@@ -1,4 +1,4 @@
-use std::hash::{BuildHasher as _, Hash, Hasher as _};
+use std::hash::{BuildHasher as _, Hash};
 use std::ops::Index;
 
 use hashbrown::hash_table::{Entry, HashTable};
@@ -126,11 +126,11 @@ impl<T: Hash + Eq> Interner<T> {
 
     /// Intern `token` and return a the interned integer
     pub fn intern(&mut self, token: T) -> Token {
-        let hash = hash_one(&self.hasher, &token);
+        let hash = self.hasher.hash_one(&token);
         match self.table.entry(
             hash,
             |&it| self.tokens[it.0 as usize] == token,
-            |&token| hash_one(&self.hasher, &self.tokens[token.0 as usize]),
+            |&token| self.hasher.hash_one(&self.tokens[token.0 as usize]),
         ) {
             Entry::Occupied(entry) => *entry.get(),
             Entry::Vacant(entry) => {
@@ -155,14 +155,14 @@ impl<T: Hash + Eq> Interner<T> {
         if retained <= erased {
             self.table.clear();
             for (i, token) in self.tokens[0..retained].iter().enumerate() {
-                let hash = hash_one(&self.hasher, &token);
+                let hash = self.hasher.hash_one(token);
                 self.table.insert_unique(hash, Token(i as u32), |&token| {
-                    hash_one(&self.hasher, &self.tokens[token.0 as usize])
+                    self.hasher.hash_one(&self.tokens[token.0 as usize])
                 });
             }
         } else {
             for (i, token) in self.tokens[retained..].iter().enumerate() {
-                let hash = hash_one(&self.hasher, &token);
+                let hash = self.hasher.hash_one(token);
                 match self
                     .table
                     .find_entry(hash, |token| token.0 == (retained + i) as u32)
@@ -181,13 +181,4 @@ impl<T: Hash + Eq> Index<Token> for Interner<T> {
     fn index(&self, index: Token) -> &Self::Output {
         &self.tokens[index.0 as usize]
     }
-}
-
-// TODO: remove in favor of BuildHasher::hash_one once compilers older than 1.71
-// no longer need to be supported.
-// https://doc.rust-lang.org/std/hash/trait.BuildHasher.html#method.hash_one
-fn hash_one<T: Hash>(hasher_parameters: &RandomState, token: &T) -> u64 {
-    let mut hasher = hasher_parameters.build_hasher();
-    token.hash(&mut hasher);
-    hasher.finish()
 }
