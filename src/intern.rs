@@ -103,8 +103,8 @@ pub struct Interner<T: Hash + Eq> {
 }
 
 impl<T: Hash + Eq> Interner<T> {
-    /// Create an Interner with an initial capacity calculated by calling.
-    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    /// Create an Interner with an initial capacity calculated by summing the results of calling
+    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`.
     pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
         Self::new(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
