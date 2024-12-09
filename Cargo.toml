@@ -20,8 +20,7 @@ maintenance = { status = "actively-developed" }
 
 
 [dependencies]
-ahash = "0.8.0"
-hashbrown = { version = "0.15", default-features = false, features = ["inline-more"] }
+hashbrown = { version = "0.15", default-features = false, features = ["default-hasher", "inline-more"] }
 
 [features]
 default = ["unified_diff"]
