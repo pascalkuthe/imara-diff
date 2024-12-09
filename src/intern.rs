@@ -1,8 +1,8 @@
-use std::hash::Hash;
+use std::hash::{BuildHasher as _, Hash};
 use std::ops::Index;
 
-use ahash::RandomState;
 use hashbrown::hash_table::{Entry, HashTable};
+use hashbrown::DefaultHashBuilder as RandomState;
 
 /// A token represented as an interned integer.
 ///
@@ -114,7 +114,7 @@ impl<T: Hash + Eq> Interner<T> {
         Interner {
             tokens: Vec::with_capacity(capacity),
             table: HashTable::with_capacity(capacity),
-            hasher: RandomState::new(),
+            hasher: RandomState::default(),
         }
     }
 

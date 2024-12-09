@@ -3,7 +3,7 @@ name = "imara-diff"
 version = "0.1.7"
 edition = "2021"
 authors = ["pascalkuthe <pascalkuthe@pm.me>"]
-rust-version = "1.61"
+rust-version = "1.71"
 license = "Apache-2.0"
 
 description = "A high performance library for computing diffs."
@@ -17,8 +17,7 @@ exclude = [
 ]
 
 [dependencies]
-ahash = "0.8.0"
-hashbrown = { version = "0.15", default-features = false, features = ["inline-more"] }
+hashbrown = { version = "0.15", default-features = false, features = ["default-hasher", "inline-more"] }
 
 [features]
 default = ["unified_diff"]
