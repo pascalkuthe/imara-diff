@@ -3,7 +3,7 @@ name = "imara-diff"
 version = "0.1.7"
 edition = "2021"
 authors = ["pascalkuthe <pascalkuthe@pm.me>"]
-rust-version = "1.61"
+rust-version = "1.71"
 license = "Apache-2.0"
 
 description = "A high performance library for computing diffs."
