@@ -2,7 +2,7 @@ use std::hash::Hash;
 use std::ops::Index;
 
 use ahash::RandomState;
-use hashbrown::raw::RawTable;
+use hashbrown::hash_table::{Entry, HashTable};
 
 /// A token represented as an interned integer.
 ///
@@ -98,7 +98,7 @@ impl<T: Eq + Hash> InternedInput<T> {
 #[derive(Default)]
 pub struct Interner<T: Hash + Eq> {
     tokens: Vec<T>,
-    table: RawTable<Token>,
+    table: HashTable<Token>,
     hasher: RandomState,
 }
 
@@ -113,32 +113,32 @@ impl<T: Hash + Eq> Interner<T> {
     pub fn new(capacity: usize) -> Interner<T> {
         Interner {
             tokens: Vec::with_capacity(capacity),
-            table: RawTable::with_capacity(capacity),
+            table: HashTable::with_capacity(capacity),
             hasher: RandomState::new(),
         }
     }
 
     /// Remove all interned tokens
     pub fn clear(&mut self) {
-        self.table.clear_no_drop();
+        self.table.clear();
         self.tokens.clear();
     }
 
     /// Intern `token` and return a the interned integer
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
-        if let Some(&token) = self
-            .table
-            .get(hash, |&it| self.tokens[it.0 as usize] == token)
-        {
-            token
-        } else {
-            let interned = Token(self.tokens.len() as u32);
-            self.table.insert(hash, interned, |&token| {
-                self.hasher.hash_one(&self.tokens[token.0 as usize])
-            });
-            self.tokens.push(token);
-            interned
+        match self.table.entry(
+            hash,
+            |&it| self.tokens[it.0 as usize] == token,
+            |&token| self.hasher.hash_one(&self.tokens[token.0 as usize]),
+        ) {
+            Entry::Occupied(entry) => *entry.get(),
+            Entry::Vacant(entry) => {
+                let interned = Token(self.tokens.len() as u32);
+                entry.insert(interned);
+                self.tokens.push(token);
+                interned
+            }
         }
     }
 
@@ -153,20 +153,23 @@ impl<T: Hash + Eq> Interner<T> {
         let retained = first_erased_token.0 as usize;
         let erased = self.tokens.len() - retained;
         if retained <= erased {
-            self.table.clear_no_drop();
-            // safety, we assert that retained is smaller then the table size so the table will never have to grow
-            unsafe {
-                for (i, token) in self.tokens[0..retained].iter().enumerate() {
-                    self.table
-                        .insert_no_grow(self.hasher.hash_one(token), Token(i as u32));
-                }
+            self.table.clear();
+            for (i, token) in self.tokens[0..retained].iter().enumerate() {
+                let hash = self.hasher.hash_one(token);
+                self.table.insert_unique(hash, Token(i as u32), |&token| {
+                    self.hasher.hash_one(&self.tokens[token.0 as usize])
+                });
             }
         } else {
             for (i, token) in self.tokens[retained..].iter().enumerate() {
-                self.table
-                    .erase_entry(self.hasher.hash_one(token), |token| {
-                        token.0 == (retained + i) as u32
-                    });
+                let hash = self.hasher.hash_one(token);
+                match self
+                    .table
+                    .find_entry(hash, |token| token.0 == (retained + i) as u32)
+                {
+                    Ok(occupied) => drop(occupied.remove()),
+                    Err(_absent) => unreachable!(),
+                }
             }
         }
         self.tokens.truncate(first_erased_token.0 as usize);
