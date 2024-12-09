@@ -245,7 +245,7 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
             k -= 2;
         }
 
-        (best_score > 0).then(|| (best_token_idx1, best_token_idx2))
+        (best_score > 0).then_some((best_token_idx1, best_token_idx2))
     }
 }
 
