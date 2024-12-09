@@ -15,9 +15,6 @@ exclude = [
     "bench_data",
     "plt.py",
 ]
-[badges]
-maintenance = { status = "actively-developed" }
-
 
 [dependencies]
 ahash = "0.8.0"
