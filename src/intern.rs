@@ -94,7 +94,7 @@ impl<T: Eq + Hash> InternedInput<T> {
     }
 }
 
-/// A hastable based interner that allows
+/// An interner that allows for fast access of tokens produced by a [`TokenSource`].
 #[derive(Default)]
 pub struct Interner<T: Hash + Eq> {
     tokens: Vec<T>,
@@ -103,13 +103,13 @@ pub struct Interner<T: Hash + Eq> {
 }
 
 impl<T: Hash + Eq> Interner<T> {
-    /// Create an Interner with an intial capacity calculated by calling
-    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    /// Create an Interner with an initial capacity calculated by summing the results of calling
+    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`.
     pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
         Self::new(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
 
-    /// Create an Interner with inital capacity `capacity`.
+    /// Create an Interner with initial capacity `capacity`.
     pub fn new(capacity: usize) -> Interner<T> {
         Interner {
             tokens: Vec::with_capacity(capacity),
@@ -118,13 +118,13 @@ impl<T: Hash + Eq> Interner<T> {
         }
     }
 
-    /// Remove all interned tokens
+    /// Remove all interned tokens.
     pub fn clear(&mut self) {
         self.table.clear();
         self.tokens.clear();
     }
 
-    /// Intern `token` and return a the interned integer
+    /// Intern `token` and return a the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
         match self.table.entry(
@@ -147,7 +147,7 @@ impl<T: Hash + Eq> Interner<T> {
         self.tokens.len() as u32
     }
 
-    /// Erases `first_erased_token` and any tokens interned afterwards from the interner.
+    /// Erases `first_erased_token` and any tokens interned afterward from the interner.
     pub fn erase_tokens_after(&mut self, first_erased_token: Token) {
         assert!(first_erased_token.0 <= self.tokens.len() as u32);
         let retained = first_erased_token.0 as usize;

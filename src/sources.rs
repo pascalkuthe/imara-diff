@@ -40,7 +40,7 @@ pub fn byte_lines(data: &[u8]) -> ByteLines<'_, false> {
     ByteLines(data)
 }
 
-/// By default a line diff is produced for a string
+/// By default, a line diff is produced for a string
 impl<'a> TokenSource for &'a str {
     type Token = &'a str;
 
@@ -55,7 +55,7 @@ impl<'a> TokenSource for &'a str {
     }
 }
 
-/// By default a line diff is produced for a bytes
+/// By default, a line diff is produced for a bytes
 impl<'a> TokenSource for &'a [u8] {
     type Token = Self;
     type Tokenizer = ByteLines<'a, false>;
