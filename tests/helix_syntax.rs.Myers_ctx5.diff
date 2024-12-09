@@ -1,0 +1,258 @@
+@@ -6,17 +6,19 @@
+     transaction::{ChangeSet, Operation},
+     Rope, RopeSlice, Tendril,
+ };
+ 
+ use arc_swap::{ArcSwap, Guard};
++use bitflags::bitflags;
+ use slotmap::{DefaultKey as LayerId, HopSlotMap};
+ 
+ use std::{
+     borrow::Cow,
+     cell::RefCell,
+-    collections::{HashMap, HashSet, VecDeque},
++    collections::{HashMap, VecDeque},
+     fmt,
++    mem::replace,
+     path::Path,
+     str::FromStr,
+     sync::Arc,
+ };
+ 
+@@ -592,10 +594,11 @@
+     pub fn new(source: &Rope, config: Arc<HighlightConfiguration>, loader: Arc<Loader>) -> Self {
+         let root_layer = LanguageLayer {
+             tree: None,
+             config,
+             depth: 0,
++            flags: LayerUpdateFlags::empty(),
+             ranges: vec![Range {
+                 start_byte: 0,
+                 end_byte: usize::MAX,
+                 start_point: Point::new(0, 0),
+                 end_point: Point::new(usize::MAX, usize::MAX),
+@@ -654,13 +657,14 @@
+                 } else {
+                     Point::new(0, a.column.saturating_sub(b.column))
+                 }
+             }
+ 
+-            for layer in &mut self.layers.values_mut() {
++            for layer in self.layers.values_mut() {
+                 // The root layer always covers the whole range (0..usize::MAX)
+                 if layer.depth == 0 {
++                    layer.flags = LayerUpdateFlags::MODIFIED;
+                     continue;
+                 }
+ 
+                 for range in &mut layer.ranges {
+                     // Roughly based on https://github.com/tree-sitter/tree-sitter/blob/ddeaa0c7f534268b35b4f6cb39b52df082754413/lib/src/subtree.c#L691-L720
+@@ -687,10 +691,12 @@
+                                 .saturating_add(range.end_byte - edit.old_end_byte);
+                             range.end_point = point_add(
+                                 edit.new_end_position,
+                                 point_sub(range.end_point, edit.old_end_position),
+                             );
++
++                            layer.flags |= LayerUpdateFlags::MOVED;
+                         }
+                         // if the edit starts in the space before and extends into the range
+                         else if edit.start_byte < range.start_byte {
+                             range.start_byte = edit.new_end_byte;
+                             range.start_point = edit.new_end_position;
+@@ -701,24 +707,27 @@
+                                 .saturating_add(edit.new_end_byte);
+                             range.end_point = point_add(
+                                 edit.new_end_position,
+                                 point_sub(range.end_point, edit.old_end_position),
+                             );
++                            layer.flags = LayerUpdateFlags::MODIFIED;
+                         }
+                         // If the edit is an insertion at the start of the tree, shift
+                         else if edit.start_byte == range.start_byte && is_pure_insertion {
+                             range.start_byte = edit.new_end_byte;
+                             range.start_point = edit.new_end_position;
++                            layer.flags |= LayerUpdateFlags::MOVED;
+                         } else {
+                             range.end_byte = range
+                                 .end_byte
+                                 .saturating_sub(edit.old_end_byte)
+                                 .saturating_add(edit.new_end_byte);
+                             range.end_point = point_add(
+                                 edit.new_end_position,
+                                 point_sub(range.end_point, edit.old_end_position),
+                             );
++                            layer.flags = LayerUpdateFlags::MODIFIED;
+                         }
+                     }
+                 }
+             }
+         }
+@@ -728,32 +737,38 @@
+             let mut cursor = ts_parser.cursors.pop().unwrap_or_else(QueryCursor::new);
+             // TODO: might need to set cursor range
+             cursor.set_byte_range(0..usize::MAX);
+ 
+             let source_slice = source.slice(..);
+-
+-            let mut touched = HashSet::new();
+ 
+-            // TODO: we should be able to avoid editing & parsing layers with ranges earlier in the document before the edit
+-
+             while let Some(layer_id) = queue.pop_front() {
+-                // Mark the layer as touched
+-                touched.insert(layer_id);
+-
+                 let layer = &mut self.layers[layer_id];
++
++                // Mark the layer as touched
++                layer.flags |= LayerUpdateFlags::TOUCHED;
+ 
+                 // If a tree already exists, notify it of changes.
+                 if let Some(tree) = &mut layer.tree {
+-                    for edit in edits.iter().rev() {
+-                        // Apply the edits in reverse.
+-                        // If we applied them in order then edit 1 would disrupt the positioning of edit 2.
+-                        tree.edit(edit);
++                    if layer
++                        .flags
++                        .intersects(LayerUpdateFlags::MODIFIED | LayerUpdateFlags::MOVED)
++                    {
++                        for edit in edits.iter().rev() {
++                            // Apply the edits in reverse.
++                            // If we applied them in order then edit 1 would disrupt the positioning of edit 2.
++                            tree.edit(edit);
++                        }
+                     }
+-                }
+ 
+-                // Re-parse the tree.
+-                layer.parse(&mut ts_parser.parser, source)?;
++                    if layer.flags.contains(LayerUpdateFlags::MODIFIED) {
++                        // Re-parse the tree.
++                        layer.parse(&mut ts_parser.parser, source)?;
++                    }
++                } else {
++                    // always parse if this layer has never been parsed before
++                    layer.parse(&mut ts_parser.parser, source)?;
++                }
+ 
+                 // Switch to an immutable borrow.
+                 let layer = &self.layers[layer_id];
+ 
+                 // Process injections.
+@@ -853,10 +868,12 @@
+                         self.layers.insert(LanguageLayer {
+                             tree: None,
+                             config,
+                             depth,
+                             ranges,
++                            // set the modified flag to ensure the layer is parsed
++                            flags: LayerUpdateFlags::empty(),
+                         })
+                     });
+ 
+                     queue.push_back(layer_id);
+                 }
+@@ -866,12 +883,15 @@
+             }
+ 
+             // Return the cursor back in the pool.
+             ts_parser.cursors.push(cursor);
+ 
+-            // Remove all untouched layers
+-            self.layers.retain(|id, _| touched.contains(&id));
++            // Reset all `LayerUpdateFlags` and remove all untouched layers
++            self.layers.retain(|_, layer| {
++                replace(&mut layer.flags, LayerUpdateFlags::empty())
++                    .contains(LayerUpdateFlags::TOUCHED)
++            });
+ 
+             Ok(())
+         })
+     }
+ 
+@@ -964,30 +984,43 @@
+     // suggested_indent_for_line_at_buffer_row
+     // suggested_indent_for_buffer_row
+     // indent_level_for_line
+ 
+     // TODO: Folding
++}
++
++bitflags! {
++    /// Flags that track the status of a layer
++    /// in the `Sytaxn::update` function
++    struct LayerUpdateFlags : u32{
++        const MODIFIED = 0b001;
++        const MOVED = 0b010;
++        const TOUCHED = 0b100;
++    }
+ }
+ 
+ #[derive(Debug)]
+ pub struct LanguageLayer {
+     // mode
+     // grammar
+     pub config: Arc<HighlightConfiguration>,
+     pub(crate) tree: Option<Tree>,
+     pub ranges: Vec<Range>,
+-    pub depth: usize,
++    pub depth: u32,
++    flags: LayerUpdateFlags,
+ }
+ 
+ impl LanguageLayer {
+     pub fn tree(&self) -> &Tree {
+         // TODO: no unwrap
+         self.tree.as_ref().unwrap()
+     }
+ 
+     fn parse(&mut self, parser: &mut Parser, source: &Rope) -> Result<(), Error> {
+-        parser.set_included_ranges(&self.ranges).unwrap();
++        parser
++            .set_included_ranges(&self.ranges)
++            .map_err(|_| Error::InvalidRanges)?;
+ 
+         parser
+             .set_language(self.config.language)
+             .map_err(|_| Error::InvalidLanguage)?;
+ 
+@@ -1133,10 +1166,11 @@
+ /// Represents the reason why syntax highlighting failed.
+ #[derive(Debug, PartialEq, Eq)]
+ pub enum Error {
+     Cancelled,
+     InvalidLanguage,
++    InvalidRanges,
+     Unknown,
+ }
+ 
+ /// Represents a single step in rendering a syntax-highlighted document.
+ #[derive(Copy, Clone, Debug)]
+@@ -1186,11 +1220,11 @@
+     byte_offset: usize,
+     cancellation_flag: Option<&'a AtomicUsize>,
+     layers: Vec<HighlightIterLayer<'a>>,
+     iter_count: usize,
+     next_event: Option<HighlightEvent>,
+-    last_highlight_range: Option<(usize, usize, usize)>,
++    last_highlight_range: Option<(usize, usize, u32)>,
+ }
+ 
+ // Adapter to convert rope chunks to bytes
+ pub struct ChunksBytes<'a> {
+     chunks: ropey::iter::Chunks<'a>,
+@@ -1219,11 +1253,11 @@
+     cursor: QueryCursor,
+     captures: iter::Peekable<QueryCaptures<'a, 'a, RopeProvider<'a>>>,
+     config: &'a HighlightConfiguration,
+     highlight_end_stack: Vec<usize>,
+     scope_stack: Vec<LocalScope<'a>>,
+-    depth: usize,
++    depth: u32,
+     ranges: &'a [Range],
+ }
+ 
+ impl<'a> fmt::Debug for HighlightIterLayer<'a> {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
