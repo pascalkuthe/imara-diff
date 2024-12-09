@@ -171,7 +171,7 @@ mod tests;
 /// `imara-diff` supports multiple different algorithms
 /// for computing an edit sequence.
 /// These algorithms have different performance and all produce different output.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub enum Algorithm {
     /// A variation of the [`patience` diff algorithm described by Bram Cohen's blog post](https://bramcohen.livejournal.com/73318.html)
     /// that uses a histogram to find the least common LCS.
@@ -199,6 +199,7 @@ pub enum Algorithm {
     /// fallback to Myers algorithm. However this detection has a nontrivial overhead, so
     /// if its known upfront that the sort of tokens is very small `Myers` algorithm should
     /// be used instead.
+    #[default]
     Histogram,
     /// An implementation of the linear space variant of
     /// [Myers  `O((N+M)D)` algorithm](http://www.xmailserver.org/diff2.pdf).
@@ -228,12 +229,6 @@ pub enum Algorithm {
 impl Algorithm {
     #[cfg(test)]
     const ALL: [Self; 2] = [Algorithm::Histogram, Algorithm::Myers];
-}
-
-impl Default for Algorithm {
-    fn default() -> Self {
-        Algorithm::Histogram
-    }
 }
 
 /// Computes an edit-script that transforms `input.before` into `input.after` using
