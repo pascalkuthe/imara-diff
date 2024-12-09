@@ -30,7 +30,7 @@
 //!
 //! ```
 //! use imara_diff::intern::InternedInput;
-//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder, unified_diff};
 //!
 //! let before = r#"fn foo() -> Bar {
 //!     let mut foo = 2;
@@ -49,7 +49,7 @@
 //! "#;
 //!
 //! let input = InternedInput::new(before, after);
-//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input, None));
+//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input, unified_diff::ContextSize::symmetrical(3)));
 //! assert_eq!(
 //!     diff,
 //!     r#"@@ -1,5 +1,8 @@
@@ -150,7 +150,7 @@
 //! ```
 
 #[cfg(feature = "unified_diff")]
-pub use unified_diff::UnifiedDiffBuilder;
+pub use unified_diff::_impl::UnifiedDiffBuilder;
 
 use crate::intern::{InternedInput, Token, TokenSource};
 pub use crate::sink::Sink;
@@ -160,7 +160,7 @@ mod myers;
 pub mod sink;
 pub mod sources;
 #[cfg(feature = "unified_diff")]
-mod unified_diff;
+pub mod unified_diff;
 mod util;
 
 #[cfg(test)]

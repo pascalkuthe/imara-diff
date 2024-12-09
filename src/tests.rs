@@ -6,7 +6,7 @@ use expect_test::{expect, expect_file};
 
 use crate::intern::InternedInput;
 use crate::sink::Counter;
-use crate::{diff, Algorithm, UnifiedDiffBuilder};
+use crate::{diff, unified_diff::ContextSize, Algorithm, UnifiedDiffBuilder};
 
 #[test]
 fn replace() {
@@ -28,7 +28,11 @@ fn foo() -> Bar{
     let input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        let diff = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::default()),
+        );
         expect![[r#"
             @@ -1,5 +1,8 @@
             +const TEST: i32 = 0;
@@ -55,7 +59,11 @@ fn identical_files() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
         let input = InternedInput::new(file, file);
-        let diff = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        let diff = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::default()),
+        );
         assert_eq!(diff, "");
     }
 }
@@ -76,7 +84,11 @@ fn simple_insert() {
     let mut input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
-        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        let res = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::default()),
+        );
         expect![[r#"
           @@ -1,4 +1,5 @@
            fn foo() -> Bar{
@@ -89,7 +101,11 @@ fn simple_insert() {
 
         swap(&mut input.before, &mut input.after);
 
-        let res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        let res = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::default()),
+        );
         expect![[r#"
             @@ -1,5 +1,4 @@
              fn foo() -> Bar{
@@ -129,11 +145,19 @@ fn hand_checked_udiffs() {
         let before = read_to_string(path_before).unwrap();
         let after = read_to_string(path_after).unwrap();
         let input = InternedInput::new(&*before, &*after);
-        let diff_res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, None));
+        let diff_res = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::default()),
+        );
         expect_file![path_diff].assert_eq(&diff_res);
         // test with a context of 5 lines
         let path_diff = test_dir.join(format!("{file}.{algorithm:?}_ctx5.diff"));
-        let diff_res = diff(algorithm, &input, UnifiedDiffBuilder::new(&input, Some(5)));
+        let diff_res = diff(
+            algorithm,
+            &input,
+            UnifiedDiffBuilder::new(&input, ContextSize::symmetrical(5)),
+        );
         expect_file![path_diff].assert_eq(&diff_res);
     }
 }
