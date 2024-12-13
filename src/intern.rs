@@ -102,7 +102,7 @@ pub struct Interner<T> {
     hasher: RandomState,
 }
 
-impl<T: Hash + Eq> Interner<T> {
+impl<T> Interner<T> {
     /// Create an Interner with an initial capacity calculated by summing the results of calling
     /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`.
     pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
@@ -124,6 +124,13 @@ impl<T: Hash + Eq> Interner<T> {
         self.tokens.clear();
     }
 
+    /// Returns to total number of **distinct** tokens currently interned.
+    pub fn num_tokens(&self) -> u32 {
+        self.tokens.len() as u32
+    }
+}
+
+impl<T: Hash + Eq> Interner<T> {
     /// Intern `token` and return a the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
@@ -140,11 +147,6 @@ impl<T: Hash + Eq> Interner<T> {
                 interned
             }
         }
-    }
-
-    /// Returns to total number of **distinct** tokens currently interned.
-    pub fn num_tokens(&self) -> u32 {
-        self.tokens.len() as u32
     }
 
     /// Erases `first_erased_token` and any tokens interned afterward from the interner.
