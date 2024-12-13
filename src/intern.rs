@@ -52,6 +52,14 @@ pub struct InternedInput<T: Eq + Hash> {
     pub interner: Interner<T>,
 }
 
+impl<T> InternedInput<T> {
+    pub fn clear(&mut self) {
+        self.before.clear();
+        self.after.clear();
+        self.interner.clear();
+    }
+}
+
 impl<T: Eq + Hash> InternedInput<T> {
     pub fn new<I: TokenSource<Token = T>>(before: I, after: I) -> Self {
         let token_estimate_before = before.estimate_tokens() as usize;
@@ -85,12 +93,6 @@ impl<T: Eq + Hash> InternedInput<T> {
         self.after.clear();
         self.after
             .extend(input.map(|token| self.interner.intern(token)));
-    }
-
-    pub fn clear(&mut self) {
-        self.before.clear();
-        self.after.clear();
-        self.interner.clear();
     }
 }
 
@@ -178,7 +180,7 @@ impl<T: Hash + Eq> Interner<T> {
     }
 }
 
-impl<T: Hash + Eq> Index<Token> for Interner<T> {
+impl<T> Index<Token> for Interner<T> {
     type Output = T;
     fn index(&self, index: Token) -> &Self::Output {
         &self.tokens[index.0 as usize]
