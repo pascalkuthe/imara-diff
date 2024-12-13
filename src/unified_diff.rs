@@ -1,5 +1,4 @@
 use std::fmt::{Display, Write};
-use std::hash::Hash;
 use std::ops::Range;
 
 use crate::intern::{InternedInput, Interner, Token};
@@ -10,7 +9,7 @@ use crate::Sink;
 pub struct UnifiedDiffBuilder<'a, W, T>
 where
     W: Write,
-    T: Hash + Eq + Display,
+    T: Display,
 {
     before: &'a [Token],
     after: &'a [Token],
@@ -28,7 +27,7 @@ where
 
 impl<'a, T> UnifiedDiffBuilder<'a, String, T>
 where
-    T: Hash + Eq + Display,
+    T: Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
     /// that will return a [`String`].
@@ -51,7 +50,7 @@ where
 impl<'a, W, T> UnifiedDiffBuilder<'a, W, T>
 where
     W: Write,
-    T: Hash + Eq + Display,
+    T: Display,
 {
     /// Create a new `UnifiedDiffBuilder` for the given `input`,
     /// that will writes it output to the provided implementation of [`Write`].
@@ -111,7 +110,7 @@ where
 impl<W, T> Sink for UnifiedDiffBuilder<'_, W, T>
 where
     W: Write,
-    T: Hash + Eq + Display,
+    T: Display,
 {
     type Out = W;
 
