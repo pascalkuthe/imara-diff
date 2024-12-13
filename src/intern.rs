@@ -46,7 +46,7 @@ pub trait TokenSource {
 ///
 /// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(Default)]
-pub struct InternedInput<T: Eq + Hash> {
+pub struct InternedInput<T> {
     pub before: Vec<Token>,
     pub after: Vec<Token>,
     pub interner: Interner<T>,
