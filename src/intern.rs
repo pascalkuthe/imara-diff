@@ -96,7 +96,7 @@ impl<T: Eq + Hash> InternedInput<T> {
 
 /// An interner that allows for fast access of tokens produced by a [`TokenSource`].
 #[derive(Default)]
-pub struct Interner<T: Hash + Eq> {
+pub struct Interner<T> {
     tokens: Vec<T>,
     table: HashTable<Token>,
     hasher: RandomState,
