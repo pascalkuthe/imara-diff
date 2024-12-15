@@ -46,10 +46,18 @@ pub trait TokenSource {
 ///
 /// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(Default)]
-pub struct InternedInput<T: Eq + Hash> {
+pub struct InternedInput<T> {
     pub before: Vec<Token>,
     pub after: Vec<Token>,
     pub interner: Interner<T>,
+}
+
+impl<T> InternedInput<T> {
+    pub fn clear(&mut self) {
+        self.before.clear();
+        self.after.clear();
+        self.interner.clear();
+    }
 }
 
 impl<T: Eq + Hash> InternedInput<T> {
@@ -86,23 +94,17 @@ impl<T: Eq + Hash> InternedInput<T> {
         self.after
             .extend(input.map(|token| self.interner.intern(token)));
     }
-
-    pub fn clear(&mut self) {
-        self.before.clear();
-        self.after.clear();
-        self.interner.clear();
-    }
 }
 
 /// An interner that allows for fast access of tokens produced by a [`TokenSource`].
 #[derive(Default)]
-pub struct Interner<T: Hash + Eq> {
+pub struct Interner<T> {
     tokens: Vec<T>,
     table: HashTable<Token>,
     hasher: RandomState,
 }
 
-impl<T: Hash + Eq> Interner<T> {
+impl<T> Interner<T> {
     /// Create an Interner with an initial capacity calculated by summing the results of calling
     /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`.
     pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
@@ -124,6 +126,13 @@ impl<T: Hash + Eq> Interner<T> {
         self.tokens.clear();
     }
 
+    /// Returns to total number of **distinct** tokens currently interned.
+    pub fn num_tokens(&self) -> u32 {
+        self.tokens.len() as u32
+    }
+}
+
+impl<T: Hash + Eq> Interner<T> {
     /// Intern `token` and return a the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
@@ -140,11 +149,6 @@ impl<T: Hash + Eq> Interner<T> {
                 interned
             }
         }
-    }
-
-    /// Returns to total number of **distinct** tokens currently interned.
-    pub fn num_tokens(&self) -> u32 {
-        self.tokens.len() as u32
     }
 
     /// Erases `first_erased_token` and any tokens interned afterward from the interner.
@@ -176,7 +180,7 @@ impl<T: Hash + Eq> Interner<T> {
     }
 }
 
-impl<T: Hash + Eq> Index<Token> for Interner<T> {
+impl<T> Index<Token> for Interner<T> {
     type Output = T;
     fn index(&self, index: Token) -> &Self::Output {
         &self.tokens[index.0 as usize]

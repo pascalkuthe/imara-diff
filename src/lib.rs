@@ -149,8 +149,6 @@
 //! assert_eq!(changes.removals, 1);
 //! ```
 
-use std::hash::Hash;
-
 #[cfg(feature = "unified_diff")]
 pub use unified_diff::UnifiedDiffBuilder;
 
@@ -234,11 +232,7 @@ impl Algorithm {
 /// Computes an edit-script that transforms `input.before` into `input.after` using
 /// the specified `algorithm`
 /// The edit-script is passed to `sink.process_change` while it is produced.
-pub fn diff<S: Sink, T: Eq + Hash>(
-    algorithm: Algorithm,
-    input: &InternedInput<T>,
-    sink: S,
-) -> S::Out {
+pub fn diff<S: Sink, T>(algorithm: Algorithm, input: &InternedInput<T>, sink: S) -> S::Out {
     diff_with_tokens(
         algorithm,
         &input.before,
