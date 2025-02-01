@@ -1,6 +1,6 @@
 [package]
 name = "imara-diff"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["pascalkuthe <pascalkuthe@pm.me>"]
 rust-version = "1.71"
