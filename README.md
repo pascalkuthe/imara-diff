@@ -17,7 +17,7 @@ comparing the same file to multiple different files.
 `imara-diff` provides two diff algorithms:
 
 * The linear-space variant of the well known [Myers algorithm](http://www.xmailserver.org/diff2.pdf) 
-* The **Histogram** algorithm which variant of the patience diff algorithm.
+* The **Histogram** algorithm which is a variant of the patience diff algorithm.
 
 Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological 
 cases to avoid quadratic time complexity and closely matches the behavior of gnu-diff and git.
@@ -109,9 +109,9 @@ The sourcecode of the helix editor.
 
 ## Stability Policy
 
-`imara-diff` uses [Semantic Versioning (SemVar)](https://semver.org/).
-All non-breaking changes to the public rust API will cause a minor `SemVar` bump.
-All breaking changes to to the public rust API will cause a major `SemVar` bump.
+`imara-diff` uses [Semantic Versioning (SemVer)](https://semver.org/).
+All non-breaking changes to the public rust API will cause a minor `SemVer` bump.
+All breaking changes to to the public rust API will cause a major `SemVer` bump.
 Changes in the produced diffs are also considered breaking changes if the produced diff was valid.
 If the produced diff was invalid the change will be considered a bugfix.
 

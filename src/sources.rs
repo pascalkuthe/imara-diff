@@ -4,38 +4,38 @@ use std::str::from_utf8_unchecked;
 use crate::TokenSource;
 
 /// Returns a [`TokenSource`] that uses
-/// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
+/// the lines in `data` as Tokens. The newline separator (`\r\n` or `\n`) is
 /// not included in the emitted tokens.
-/// This means that changing the newline seperator from `\r\n` to `\n`
+/// This means that changing the newline separator from `\r\n` to `\n`
 /// (or omitting it fully on the last line) is not detected by [`diff`](crate::diff).
 pub fn lines(data: &str) -> Lines<'_, false> {
     Lines(ByteLines(data.as_bytes()))
 }
 
 /// Returns a [`TokenSource`] that uses
-/// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
+/// the lines in `data` as Tokens. The newline separator (`\r\n` or `\n`) is
 /// included in the emitted tokens.
-/// This means that changing the newline seperator from `\r\n` to `\n`
-/// (or omitting it fully on the last line) is  detected by [`diff`](crate::diff).
+/// This means that changing the newline separator from `\r\n` to `\n`
+/// (or omitting it fully on the last line) is detected by [`diff`](crate::diff).
 pub fn lines_with_terminator(data: &str) -> Lines<'_, true> {
     Lines(ByteLines(data.as_bytes()))
 }
 
 /// Returns a [`TokenSource`] that uses
-/// the lines in `data` as Tokens. A lines is a continous subslice of
+/// the lines in `data` as Tokens. A lines is a continuous subslice of
 /// `data` which does not contain `\n` (or `\r\n`).
-/// The newline seperator (`\r\n` or `\n`) is not included in the emitted tokens.
-/// This means that changing the newline seperator from `\r\n` to `\n`
+/// The newline separator (`\r\n` or `\n`) is not included in the emitted tokens.
+/// This means that changing the newline separator from `\r\n` to `\n`
 /// (or omitting it fully on the last line) is not detected by [`diff`](crate::diff).
 pub fn byte_lines_with_terminator(data: &[u8]) -> ByteLines<'_, true> {
     ByteLines(data)
 }
 
 /// Returns a [`TokenSource`] that uses
-/// the lines in `data` as Tokens. The newline seperator (`\r\n` or `\n`) is
+/// the lines in `data` as Tokens. The newline separator (`\r\n` or `\n`) is
 /// included in the emitted tokens.
-/// This means that changing the newline seperator from `\r\n` to `\n`
-/// (or omitting it fully on the last line) is  detected by [`diff`](crate::diff).
+/// This means that changing the newline separator from `\r\n` to `\n`
+/// (or omitting it fully on the last line) is detected by [`diff`](crate::diff).
 pub fn byte_lines(data: &[u8]) -> ByteLines<'_, false> {
     ByteLines(data)
 }

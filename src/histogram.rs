@@ -12,7 +12,7 @@ mod list_pool;
 const MAX_CHAIN_LEN: u32 = 63;
 
 struct Histogram {
-    token_occurances: Vec<ListHandle>,
+    token_occurrences: Vec<ListHandle>,
     pool: ListPool,
 }
 
@@ -32,7 +32,7 @@ pub fn diff<S: Sink>(
 impl Histogram {
     fn new(num_buckets: u32) -> Histogram {
         Histogram {
-            token_occurances: vec![ListHandle::default(); num_buckets as usize],
+            token_occurrences: vec![ListHandle::default(); num_buckets as usize],
             pool: ListPool::new(2 * num_buckets),
         }
     }
@@ -41,17 +41,17 @@ impl Histogram {
         self.pool.clear();
     }
 
-    fn token_occurances(&self, token: Token) -> &[u32] {
-        self.token_occurances[token.0 as usize].as_slice(&self.pool)
+    fn token_occurrences(&self, token: Token) -> &[u32] {
+        self.token_occurrences[token.0 as usize].as_slice(&self.pool)
     }
 
-    fn num_token_occurances(&self, token: Token) -> u32 {
-        self.token_occurances[token.0 as usize].len(&self.pool)
+    fn num_token_occurrences(&self, token: Token) -> u32 {
+        self.token_occurrences[token.0 as usize].len(&self.pool)
     }
 
     fn populate(&mut self, file: &[Token]) {
         for (i, &token) in file.iter().enumerate() {
-            self.token_occurances[token.0 as usize].push(i as u32, &mut self.pool);
+            self.token_occurrences[token.0 as usize].push(i as u32, &mut self.pool);
         }
     }
 
@@ -109,9 +109,9 @@ impl Histogram {
                     after_off += after_end;
                 }
                 None => {
-                    // we are diffing two extremly large repetitive file
+                    // we are diffing two extremely large repetitive files
                     // this is a worst case for histogram diff with O(N^2) performance
-                    // fallback to myers to maintain linear time complxity
+                    // fallback to myers to maintain linear time complexity
                     myers::diff(
                         before,
                         after,

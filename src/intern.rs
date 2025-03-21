@@ -10,7 +10,7 @@ use hashbrown::DefaultHashBuilder as RandomState;
 /// For text this is usually a line, a word or a single character.
 /// All [algorithms](crate::Algorithm) operate on interned tokens instead
 /// of using the token data directly.
-/// This allows for much better performance by amortizing the cost hashing/equality.
+/// This allows for much better performance by amortizing the cost of hashing/equality.
 ///
 /// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -42,7 +42,7 @@ pub trait TokenSource {
 /// For text this is usually a line, a word or a single character.
 /// All [algorithms](crate::Algorithm) operate on interned tokens instead
 /// of using the token data directly.
-/// This allows for much better performance by amortizing the cost hashing/equality.
+/// This allows for much better performance by amortizing the cost of hashing/equality.
 ///
 /// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(Default)]
@@ -74,7 +74,7 @@ impl<T: Eq + Hash> InternedInput<T> {
         res
     }
 
-    /// replaces `self.before` wtih the iterned Tokens yielded by `input`
+    /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
     /// a memory leak. If this function is called often over a long_running process
     /// consider clearing the interner with [`clear`](crate::intern::Interner::clear).
@@ -84,7 +84,7 @@ impl<T: Eq + Hash> InternedInput<T> {
             .extend(input.map(|token| self.interner.intern(token)));
     }
 
-    /// replaces `self.before` wtih the iterned Tokens yielded by `input`
+    /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
     /// a memory leak. If this function is called often over a long_running process
     /// consider clearing the interner with [`clear`](crate::intern::Interner::clear) or

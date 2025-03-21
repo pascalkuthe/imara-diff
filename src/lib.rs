@@ -10,8 +10,8 @@
 //!
 //! Imara-diff provides two diff algorithms:
 //!
-//! * The linear-space variant of the well known [**myer** algorithm](http://www.xmailserver.org/diff2.pdf)
-//! * The **Histogram** algorithm which variant of the patience diff algorithm.
+//! * The linear-space variant of the well known [**Myers** algorithm](http://www.xmailserver.org/diff2.pdf)
+//! * The **Histogram** algorithm which is a variant of the patience diff algorithm.
 //!
 //! Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological
 //! cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
@@ -22,7 +22,7 @@
 //! For example while comparing multiple different linux kernel it performs up to 30 times better than the `similar` crate:
 #![cfg_attr(doc, doc=concat!("<img width=\"600\" class=\"figure\" src=\"data:image/svg+xml;base64,", include_str!("../plots/linux_comparison.svg.base64"), "\"></img>"))]
 //!
-//! # Api Overview
+//! # API Overview
 //!
 //! Imara-diff provides the [`UnifiedDiffBuilder`](crate::UnifiedDiffBuilder) for building
 //! a human-readable diff similar to the output of `git diff` or `diff -u`.
@@ -127,7 +127,7 @@
 //!
 //! For `&str` and `&[u8]` imara-diff will compute a line diff by default.
 //! To perform diffs of different tokenizations and collections you can implement the [`TokenSource`](crate::intern::TokenSource) trait.
-//! For example the imara-diff provides an alternative tokenziser for line-diffs that includes the line terminator in the line:
+//! For example the imara-diff provides an alternative tokenizer for line-diffs that includes the line terminator in the line:
 //!
 //! ```
 //! use imara_diff::intern::InternedInput;
