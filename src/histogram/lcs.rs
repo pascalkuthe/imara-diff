@@ -8,7 +8,7 @@ pub(super) fn find_lcs(
 ) -> Option<Lcs> {
     let mut search = LcsSearch {
         lcs: Lcs::default(),
-        min_occurances: MAX_CHAIN_LEN + 1,
+        min_occurrences: MAX_CHAIN_LEN + 1,
         found_cs: false,
     };
     search.run(before, after, histogram);
@@ -28,7 +28,7 @@ pub struct Lcs {
 
 pub struct LcsSearch {
     lcs: Lcs,
-    min_occurances: u32,
+    min_occurrences: u32,
     found_cs: bool,
 }
 
@@ -36,9 +36,9 @@ impl LcsSearch {
     fn run(&mut self, before: &[Token], after: &[Token], histogram: &mut Histogram) {
         let mut pos = 0;
         while let Some(&token) = after.get(pos as usize) {
-            if histogram.num_token_occurances(token) != 0 {
+            if histogram.num_token_occurrences(token) != 0 {
                 self.found_cs = true;
-                if histogram.num_token_occurances(token) <= self.min_occurances {
+                if histogram.num_token_occurrences(token) <= self.min_occurrences {
                     pos = self.update_lcs(pos, token, histogram, before, after);
                     continue;
                 }
@@ -51,7 +51,7 @@ impl LcsSearch {
     }
 
     fn success(&mut self) -> bool {
-        !self.found_cs || self.min_occurances <= MAX_CHAIN_LEN
+        !self.found_cs || self.min_occurrences <= MAX_CHAIN_LEN
     }
 
     fn update_lcs(
@@ -63,11 +63,11 @@ impl LcsSearch {
         after: &[Token],
     ) -> u32 {
         let mut next_token_idx2 = after_pos + 1;
-        let mut occurances_iter = histogram.token_occurances(token).iter().copied();
-        let mut token_idx1 = occurances_iter.next().unwrap();
+        let mut occurrences_iter = histogram.token_occurrences(token).iter().copied();
+        let mut token_idx1 = occurrences_iter.next().unwrap();
 
-        'occurances_iter: loop {
-            let mut occurances = histogram.num_token_occurances(token);
+        'occurrences_iter: loop {
+            let mut occurrences = histogram.num_token_occurrences(token);
             let mut start1 = token_idx1;
             let mut start2 = after_pos;
             loop {
@@ -79,8 +79,8 @@ impl LcsSearch {
                 if matches!((token1, token2), (Some(token1), Some(token2)) if token1 == token2) {
                     start1 -= 1;
                     start2 -= 1;
-                    let new_occurances = histogram.num_token_occurances(before[start1 as usize]);
-                    occurances = occurances.min(new_occurances);
+                    let new_occurrences = histogram.num_token_occurrences(before[start1 as usize]);
+                    occurrences = occurrences.min(new_occurrences);
                 } else {
                     break;
                 }
@@ -93,8 +93,8 @@ impl LcsSearch {
                 let token1 = before.get(end1 as usize);
                 let token2 = after.get(end2 as usize);
                 if matches!((token1, token2), (Some(token1), Some(token2)) if token1 == token2) {
-                    let new_occurances = histogram.num_token_occurances(before[end1 as usize]);
-                    occurances = occurances.min(new_occurances);
+                    let new_occurrences = histogram.num_token_occurrences(before[end1 as usize]);
+                    occurrences = occurrences.min(new_occurrences);
                     end1 += 1;
                     end2 += 1;
                 } else {
@@ -108,8 +108,8 @@ impl LcsSearch {
 
             let len = end2 - start2;
             debug_assert_eq!(len, end1 - start1);
-            if self.lcs.len < len || self.min_occurances > occurances {
-                self.min_occurances = occurances;
+            if self.lcs.len < len || self.min_occurrences > occurrences {
+                self.min_occurrences = occurrences;
                 self.lcs = Lcs {
                     before_start: start1,
                     after_start: start2,
@@ -118,13 +118,13 @@ impl LcsSearch {
             }
 
             loop {
-                if let Some(next_token_idx) = occurances_iter.next() {
+                if let Some(next_token_idx) = occurrences_iter.next() {
                     if next_token_idx > end2 {
                         token_idx1 = next_token_idx;
                         break;
                     }
                 } else {
-                    break 'occurances_iter;
+                    break 'occurrences_iter;
                 }
             }
         }

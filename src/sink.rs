@@ -9,7 +9,7 @@ pub trait Sink: Sized {
     /// A change is a continuous subsequence of [tokens](crate::intern::Token) `before` that needs
     /// to be replaced by a different continuous subsequence of tokens `after` to construct the second file from the first.
     ///
-    /// These token subsequences are passed to this function in in ** strictly monotonically increasing order**.
+    /// These token subsequences are passed to this function in **strictly monotonically increasing order**.
     /// That means that for two subsequent calls `process_change(before1, after1)` and `process_change(before2, after2)`
     /// the following always holds:
     ///
@@ -19,7 +19,7 @@ pub trait Sink: Sized {
     /// ```
     ///
     /// # Parameters
-    /// - **`before`** - the **position** of the removed token subsequence in the orignal file.
+    /// - **`before`** - the **position** of the removed token subsequence in the original file.
     /// - **`after`** - the **position** of the inserted token subsequence in the destination file.
     ///
     /// # Notes

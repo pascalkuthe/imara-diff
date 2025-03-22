@@ -72,8 +72,8 @@ impl Default for ListHandle {
     }
 }
 
-const MAX_SIZE_CLAS: SizeClass = sclass_for_length(super::MAX_CHAIN_LEN - 1);
-const NUM_SIZE_CLASS: usize = MAX_SIZE_CLAS as usize + 1;
+const MAX_SIZE_CLASS: SizeClass = sclass_for_length(super::MAX_CHAIN_LEN - 1);
+const NUM_SIZE_CLASS: usize = MAX_SIZE_CLASS as usize + 1;
 
 /// A memory pool for storing lists of `T`.
 #[derive(Clone, Debug)]

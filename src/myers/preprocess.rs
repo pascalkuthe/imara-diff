@@ -15,69 +15,69 @@ pub fn preprocess(
 }
 
 /// computes how
-fn token_occurrences(file1: &[Token], file2: &[Token]) -> (Vec<Occurances>, Vec<Occurances>) {
+fn token_occurrences(file1: &[Token], file2: &[Token]) -> (Vec<Occurrences>, Vec<Occurrences>) {
     const MAX_EQLIMIT: u32 = 1024;
 
-    // compute the limit after which tokens are treated as `Occurances::COMMON`
+    // compute the limit after which tokens are treated as `Occurrences::COMMON`
     let eqlimit1 = sqrt(file1.len()).min(MAX_EQLIMIT);
     let eqlimit2 = sqrt(file2.len()).min(MAX_EQLIMIT);
 
     // first collect how often each token occurs in a file
-    let mut occurances1 = Vec::new();
+    let mut occurrences1 = Vec::new();
     for token in file1 {
         let bucket = token.0 as usize;
-        if bucket >= occurances1.len() {
-            occurances1.resize(bucket + 1, 0u32);
+        if bucket >= occurrences1.len() {
+            occurrences1.resize(bucket + 1, 0u32);
         }
-        occurances1[bucket] += 1;
+        occurrences1[bucket] += 1;
     }
 
     // do the same thing for
-    let mut occurances2 = Vec::new();
-    let token_occurances2: Vec<_> = file2
+    let mut occurrences2 = Vec::new();
+    let token_occurrences2: Vec<_> = file2
         .iter()
         .map(|token| {
             let bucket = token.0 as usize;
-            if bucket >= occurances2.len() {
-                occurances2.resize(bucket + 1, 0);
+            if bucket >= occurrences2.len() {
+                occurrences2.resize(bucket + 1, 0);
             }
-            occurances2[bucket] += 1;
-            let occurances1 = *occurances1.get(bucket).unwrap_or(&0);
-            Occurances::from_occurances(occurances1, eqlimit2)
+            occurrences2[bucket] += 1;
+            let occurrences1 = *occurrences1.get(bucket).unwrap_or(&0);
+            Occurrences::from_occurrences(occurrences1, eqlimit2)
         })
         .collect();
 
-    let token_occurances1: Vec<_> = file1
+    let token_occurrences1: Vec<_> = file1
         .iter()
         .map(|token| {
             let bucket = token.0 as usize;
-            let occurances2 = *occurances2.get(bucket).unwrap_or(&0);
-            Occurances::from_occurances(occurances2, eqlimit1)
+            let occurrences2 = *occurrences2.get(bucket).unwrap_or(&0);
+            Occurrences::from_occurrences(occurrences2, eqlimit1)
         })
         .collect();
 
-    (token_occurances1, token_occurances2)
+    (token_occurrences1, token_occurrences2)
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Occurances {
+enum Occurrences {
     /// Token does not occur in this file
     None,
     /// Token occurs at least once
     Some,
     /// Token occurs very frequently (exact number depends on file size).
-    /// Such a tokens are usually empty lines or braces and are often not meaningful to a diff
+    /// Such tokens are usually empty lines or braces and are often not meaningful to a diff
     Common,
 }
 
-impl Occurances {
-    pub fn from_occurances(occurances: u32, eqlimit: u32) -> Occurances {
-        if occurances == 0 {
-            Occurances::None
-        } else if occurances >= eqlimit {
-            Occurances::Common
+impl Occurrences {
+    pub fn from_occurrences(occurrences: u32, eqlimit: u32) -> Occurrences {
+        if occurrences == 0 {
+            Occurrences::None
+        } else if occurrences >= eqlimit {
+            Occurrences::Common
         } else {
-            Occurances::Some
+            Occurrences::Some
         }
     }
 }
@@ -91,7 +91,7 @@ pub struct PreprocessedFile {
 }
 
 impl PreprocessedFile {
-    fn new(offset: u32, token_diff: &[Occurances], tokens: &[Token]) -> PreprocessedFile {
+    fn new(offset: u32, token_diff: &[Occurrences], tokens: &[Token]) -> PreprocessedFile {
         let mut changed = vec![false; tokens.len()];
         let (tokens, indices) = prune_unmatched_tokens(tokens, token_diff, &mut changed);
         PreprocessedFile {
@@ -105,7 +105,7 @@ impl PreprocessedFile {
 
 fn prune_unmatched_tokens(
     file: &[Token],
-    token_status: &[Occurances],
+    token_status: &[Occurrences],
     changed: &mut [bool],
 ) -> (Vec<Token>, Vec<u32>) {
     assert_eq!(token_status.len(), file.len());
@@ -114,9 +114,9 @@ fn prune_unmatched_tokens(
         .enumerate()
         .filter_map(|(i, (&token, &status))| {
             let prune = match status {
-                Occurances::None => true,
-                Occurances::Some => false,
-                Occurances::Common => should_prune_common_line(token_status, i),
+                Occurrences::None => true,
+                Occurrences::Some => false,
+                Occurrences::Common => should_prune_common_line(token_status, i),
             };
             if prune {
                 changed[i] = true;
@@ -129,7 +129,7 @@ fn prune_unmatched_tokens(
 }
 
 // TODO do not unnecessarily rescan lines
-fn should_prune_common_line(token_status: &[Occurances], pos: usize) -> bool {
+fn should_prune_common_line(token_status: &[Occurrences], pos: usize) -> bool {
     const WINDOW_SIZE: usize = 100;
 
     let mut unmatched_before = 0;
@@ -138,13 +138,13 @@ fn should_prune_common_line(token_status: &[Occurances], pos: usize) -> bool {
     let start = if pos > WINDOW_SIZE { WINDOW_SIZE } else { 0 };
     for status in token_status[start..pos].iter().rev() {
         match status {
-            Occurances::None => {
+            Occurrences::None => {
                 unmatched_before += 1;
             }
-            Occurances::Common => {
+            Occurrences::Common => {
                 common_before += 1;
             }
-            Occurances::Some => break,
+            Occurrences::Some => break,
         }
     }
 
@@ -157,13 +157,13 @@ fn should_prune_common_line(token_status: &[Occurances], pos: usize) -> bool {
     let mut common_after = 0;
     for status in token_status[pos..end].iter() {
         match status {
-            Occurances::None => {
+            Occurrences::None => {
                 unmatched_after += 1;
             }
-            Occurances::Common => {
+            Occurrences::Common => {
                 common_after += 1;
             }
-            Occurances::Some => break,
+            Occurrences::Some => break,
         }
     }
 
