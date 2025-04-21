@@ -154,6 +154,7 @@ pub use unified_diff::UnifiedDiffBuilder;
 
 use crate::intern::{InternedInput, Token, TokenSource};
 pub use crate::sink::Sink;
+mod git_diff;
 mod histogram;
 pub mod intern;
 mod myers;
