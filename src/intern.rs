@@ -36,7 +36,7 @@ pub trait TokenSource {
     fn estimate_tokens(&self) -> u32;
 }
 
-/// Two lists of interned [tokens](crate::intern::Token) that can be compared with the [`diff`](crate::diff) function.
+/// Two lists of interned [tokens](crate::intern::Token) that a [`Diff`](crate::Diff) can be computed from.
 ///
 /// A token represents the smallest possible unit of change during a diff.
 /// For text this is usually a line, a word or a single character.
@@ -72,6 +72,23 @@ impl<T: Eq + Hash> InternedInput<T> {
         res.update_before(before.tokenize());
         res.update_after(after.tokenize());
         res
+    }
+
+    /// Create an Interner with an intial capacity calculated by calling
+    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    pub fn reserve_for_token_source<S: TokenSource<Token = T> + ?Sized>(
+        &mut self,
+        before: &S,
+        after: &S,
+    ) {
+        self.reserve(before.estimate_tokens(), after.estimate_tokens())
+    }
+
+    pub fn reserve(&mut self, capacity_before: u32, capacity_after: u32) {
+        self.before.reserve(capacity_before as usize);
+        self.after.reserve(capacity_after as usize);
+        self.interner
+            .reserve(capacity_before as usize + capacity_after as usize);
     }
 
     /// replaces `self.before` with the interned Tokens yielded by `input`
@@ -133,6 +150,19 @@ impl<T> Interner<T> {
 }
 
 impl<T: Hash + Eq> Interner<T> {
+    /// Create an Interner with an intial capacity calculated by calling
+    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    pub fn reserve_for_token_source<S: TokenSource<Token = T>>(&mut self, before: &S, after: &S) {
+        self.reserve(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
+    }
+
+    pub fn reserve(&mut self, capacity: usize) {
+        self.table.reserve(capacity, |&token| {
+            self.hasher.hash_one(&self.tokens[token.0 as usize])
+        });
+        self.tokens.reserve(capacity);
+    }
+
     /// Intern `token` and return a the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);

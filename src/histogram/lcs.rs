@@ -88,7 +88,6 @@ impl LcsSearch {
 
             let mut end1 = token_idx1 + 1;
             let mut end2 = after_pos + 1;
-
             loop {
                 let token1 = before.get(end1 as usize);
                 let token2 = after.get(end2 as usize);

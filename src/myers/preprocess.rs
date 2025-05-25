@@ -1,20 +1,18 @@
 use crate::intern::Token;
 use crate::myers::sqrt;
-use crate::util::{strip_common_postfix, strip_common_prefix};
 
-pub fn preprocess(
-    mut file1: &[Token],
-    mut file2: &[Token],
+pub fn preprocess<'a>(
+    before: &[Token],
+    after: &[Token],
+    removed: &'a mut [bool],
+    added: &'a mut [bool],
 ) -> (PreprocessedFile, PreprocessedFile) {
-    let common_prefix = strip_common_prefix(&mut file1, &mut file2);
-    strip_common_postfix(&mut file1, &mut file2);
-    let (hdiff1, hdiff2) = token_occurrences(file1, file2);
-    let file1 = PreprocessedFile::new(common_prefix, &hdiff1, file1);
-    let file2 = PreprocessedFile::new(common_prefix, &hdiff2, file2);
+    let (occurances_before, occurances_after) = token_occurrences(before, after);
+    let file1 = PreprocessedFile::new(&occurances_before, before, removed);
+    let file2 = PreprocessedFile::new(&occurances_after, after, added);
     (file1, file2)
 }
 
-/// computes how
 fn token_occurrences(file1: &[Token], file2: &[Token]) -> (Vec<Occurrences>, Vec<Occurrences>) {
     const MAX_EQLIMIT: u32 = 1024;
 
@@ -84,22 +82,18 @@ impl Occurrences {
 
 #[derive(Debug)]
 pub struct PreprocessedFile {
-    pub offset: u32,
-    pub is_changed: Vec<bool>,
     pub indices: Vec<u32>,
     pub tokens: Vec<Token>,
 }
 
 impl PreprocessedFile {
-    fn new(offset: u32, token_diff: &[Occurrences], tokens: &[Token]) -> PreprocessedFile {
-        let mut changed = vec![false; tokens.len()];
-        let (tokens, indices) = prune_unmatched_tokens(tokens, token_diff, &mut changed);
-        PreprocessedFile {
-            offset,
-            is_changed: changed,
-            indices,
-            tokens,
-        }
+    fn new(
+        token_occurrences: &[Occurrences],
+        tokens: &[Token],
+        changed: &mut [bool],
+    ) -> PreprocessedFile {
+        let (tokens, indices) = prune_unmatched_tokens(tokens, token_occurrences, changed);
+        PreprocessedFile { indices, tokens }
     }
 }
 

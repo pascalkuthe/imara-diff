@@ -2,14 +2,34 @@ use std::ptr::NonNull;
 
 use crate::intern::Token;
 use crate::myers::middle_snake::{MiddleSnakeSearch, SearchResult};
-use crate::myers::preprocess::PreprocessedFile;
 use crate::myers::slice::FileSlice;
 use crate::util::sqrt;
-use crate::Sink;
 
 mod middle_snake;
 mod preprocess;
 mod slice;
+
+pub fn diff(
+    before: &[Token],
+    after: &[Token],
+    removed: &mut [bool],
+    added: &mut [bool],
+    minimal: bool,
+) {
+    // Preprocess the files by removing parts of the file that are not contained in the other file at all.
+    // This process remaps the token indices so we have to account for that during the rest of the diff
+    let (before, after) = preprocess::preprocess(before, after, removed, added);
+
+    // Perform the actual diff
+    Myers::new(before.tokens.len(), after.tokens.len()).run(
+        FileSlice::new(&before, removed),
+        FileSlice::new(&after, added),
+        minimal,
+    );
+}
+
+const HEUR_MIN_COST: u32 = 256;
+const MAX_COST_MIN: u32 = 256;
 
 pub struct Myers {
     kvec: NonNull<[i32]>,
@@ -17,32 +37,6 @@ pub struct Myers {
     kbackward: NonNull<i32>,
     max_cost: u32,
 }
-
-pub fn diff<S: Sink>(
-    before: &[Token],
-    after: &[Token],
-    _num_tokens: u32,
-    mut sink: S,
-    minimal: bool,
-) -> S::Out {
-    // preprocess the files by removing parts of the file that are not contained in the other file at all
-    // this process remaps the token indices and therefore requires us to track changed files in a char array
-    // PERF use a bitset?
-    let (mut before, mut after) = preprocess::preprocess(before, after);
-
-    // Perform the actual diff
-    Myers::new(before.tokens.len(), after.tokens.len()).run(
-        FileSlice::new(&mut before),
-        FileSlice::new(&mut after),
-        minimal,
-    );
-
-    process_changes_with_sink(&before, &after, &mut sink);
-    sink.finish()
-}
-
-const HEUR_MIN_COST: u32 = 256;
-const MAX_COST_MIN: u32 = 256;
 
 impl Drop for Myers {
     fn drop(&mut self) {
@@ -227,60 +221,60 @@ struct Split {
     minimized_hi: bool,
 }
 
-/// the mapping performed during preprocessing makes it impossible to directly call
-/// the `sink` during the diff itself. Instead `file.changed` is set to true for all
-/// tokens that are changed
-/// below these arrays are used to call the sink function
-fn process_changes_with_sink(
-    before: &PreprocessedFile,
-    after: &PreprocessedFile,
-    sink: &mut impl Sink,
-) {
-    let before_end = before.is_changed.len() as u32 + before.offset;
-    let after_end = after.is_changed.len() as u32 + after.offset;
+// /// the mapping performed during preprocessing makes it impossible to directly call
+// /// the `sink` during the diff itself. Instead `file.changed` is set to true for all
+// /// tokens that are changed
+// /// below these arrays are used to call the sink function
+// fn process_changes_with_sink(
+//     before: &PreprocessedFile,
+//     after: &PreprocessedFile,
+//     sink: &mut impl Sink,
+// ) {
+//     let before_end = before.changed.len() as u32 + before.offset;
+//     let after_end = after.changed.len() as u32 + after.offset;
 
-    let mut before = before
-        .is_changed
-        .iter()
-        .enumerate()
-        .map(|(i, removed)| (i as u32 + before.offset, *removed));
+//     let mut before = before
+//         .changed
+//         .iter()
+//         .enumerate()
+//         .map(|(i, removed)| (i as u32 + before.offset, *removed));
 
-    let mut after = after
-        .is_changed
-        .iter()
-        .enumerate()
-        .map(|(i, inserted)| (i as u32 + after.offset, *inserted));
+//     let mut after = after
+//         .changed
+//         .iter()
+//         .enumerate()
+//         .map(|(i, inserted)| (i as u32 + after.offset, *inserted));
 
-    let mut next1 = before.next();
-    let mut next2 = after.next();
+//     let mut next1 = before.next();
+//     let mut next2 = after.next();
 
-    while let (Some((before_pos, removed)), Some((after_pos, inserted))) = (next1, next2) {
-        if !(removed | inserted) {
-            next1 = before.next();
-            next2 = after.next();
-            continue;
-        }
+//     while let (Some((before_pos, removed)), Some((after_pos, inserted))) = (next1, next2) {
+//         if !(removed | inserted) {
+//             next1 = before.next();
+//             next2 = after.next();
+//             continue;
+//         }
 
-        let mut hunk_before = before_pos..before_pos;
-        let mut hunk_after = after_pos..after_pos;
-        if removed {
-            let end = before.find(|(_, changed)| !changed);
-            next1 = end.map(|(end, _)| (end, false));
-            hunk_before.end = end.map_or(before_end, |(end, _)| end);
-        };
+//         let mut hunk_before = before_pos..before_pos;
+//         let mut hunk_after = after_pos..after_pos;
+//         if removed {
+//             let end = before.find(|(_, changed)| !changed);
+//             next1 = end.map(|(end, _)| (end, false));
+//             hunk_before.end = end.map_or(before_end, |(end, _)| end);
+//         };
 
-        if inserted {
-            let end = after.find(|(_, changed)| !changed);
-            next2 = end.map(|(end, _)| (end, false));
-            hunk_after.end = end.map_or(after_end, |(end, _)| end);
-        }
+//         if inserted {
+//             let end = after.find(|(_, changed)| !changed);
+//             next2 = end.map(|(end, _)| (end, false));
+//             hunk_after.end = end.map_or(after_end, |(end, _)| end);
+//         }
 
-        sink.process_change(hunk_before, hunk_after);
-    }
+//         sink.process_change(hunk_before, hunk_after);
+//     }
 
-    if let Some((before_pos, _)) = next1 {
-        sink.process_change(before_pos..before_end, after_end..after_end);
-    } else if let Some((after_pos, _)) = next2 {
-        sink.process_change(before_end..before_end, after_pos..after_end);
-    }
-}
+//     if let Some((before_pos, _)) = next1 {
+//         sink.process_change(before_pos..before_end, after_end..after_end);
+//     } else if let Some((after_pos, _)) = next2 {
+//         sink.process_change(before_end..before_end, after_pos..after_end);
+//     }
+// }

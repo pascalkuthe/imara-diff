@@ -13,11 +13,11 @@ pub struct FileSlice<'a> {
 }
 
 impl<'a> FileSlice<'a> {
-    pub fn new(file: &'a mut PreprocessedFile) -> Self {
+    pub fn new(file: &'a PreprocessedFile, changed: &'a mut [bool]) -> Self {
         Self {
             tokens: &file.tokens,
             indices: &file.indices,
-            changed: &mut file.is_changed,
+            changed,
         }
     }
 

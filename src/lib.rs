@@ -24,19 +24,85 @@
 //!
 //! # API Overview
 //!
-//! Imara-diff provides the [`UnifiedDiffBuilder`](crate::UnifiedDiffBuilder) for building
-//! a human-readable diff similar to the output of `git diff` or `diff -u`.
-//! This makes building a tool similar to gnu diff easy:
+//! ## Preparing the input
+//! To compute an input sequence is required. `imara-diff` computes diffs on abstract
+//! sequences represented as a slice of ids/tokens: [`Token`](crate::Token). To create
+//! such a sequence from your input type (for example text) the input needs to be interned.
+//! For that `imara-diff` provides utilites in the form of `InternedInput` struct and
+//! `TokenSource` trait to construct it. The [`InternedInput`] contains the two sides of
+//! the diff (used while computing the diff). As well as the interner that allows mapping
+//! back tokens to ther original data.
+//!
+//! The most common usecase for diff is comparing text. `&str` implements `TokenSource`
+//! by default segmentent the text into lines. So creating an input for a text-based diff
+//! usually looks something like the following:
 //!
 //! ```
-//! use imara_diff::intern::InternedInput;
-//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+//! # use imara_diff::InternedInput;
+//! #
+//! let before = "abc\ndef";
+//! let after = "abc\ndefg";
+//! let input = InternedInput::new(before, after);
+//! assert_eq!(input.interner[input.before[0]], "abc\n");
+//! ```
+//!
+//! Note that interning inputs is optional and you could choose a different strategy
+//! for creating a sequence of tokens. Instead of using the [`Diff::compute`] function,
+//! [`Diff::compute_with`] can be used to provide a list of tokens directly, entirely
+//! bypassing the interning step.
+//!
+//! ## Computing the Diff
+//!
+//! A diff of two sequences is represented by the [`Diff`] struct and computed by
+//! [`Diff::compute`] / [`Diff::compute_with`]. Here also an algorithm can be choosen.
+//! In most situations [`Algorithm::Histogram`] is a good choice, refer to the docs
+//! of [`Algorithm`] for more details. After the initial computation the diff can be
+//! postprocessed. If the diff is shown to a human you in some way (even indirectly) you
+//! always want to use this. However, when only counting the number of changed tokens
+//! quickly this can be skipped. The postprocessing allows you to provide your own
+//! heuristic for selecting a slider position. An indentation-based heuristic is provided
+//! which is a good fit for all text-based line-diffs. The internals of the heuristic are
+//! public so a tweaked heuristic can be built on top.
+//!
+//! ```
+//! # use imara_diff::{InternedInput, Diff, Algorithm};
+//! #
+//! let before = "abc\ndef";
+//! let after = "abc\ndefg";
+//! let input = InternedInput::new(before, after);
+//! let mut diff = Diff::compute(Algorithm::Histogram, &input);
+//! diff.postprocess_lines(&input);
+//! assert!(!diff.is_removed(0) && !diff.is_added(0));
+//! assert!(diff.is_removed(1) && diff.is_added(1));
+//! ```
+//!
+//! ## Accessing results
+//!
+//! [`Diff`] allows to query wether a particular position was removed/added on either
+//! side of the diff with [`Diff::is_removed`] / [`Diff::is_added`]. The number
+//! of addtions/removeals can be quickly counted with [`Diff::count_removals`] /
+//! [`Diff::count_additions`]. The most powerful/useful interface is the hunk iterator
+//! [`Diff::hunks`] which will return a list of additions/removals/modifications in the
+//! order that they appear in the input.
+//!
+//! Finnally if the `unified_diff` feature is enabled a diff can be printed with
+//! [`Diff::unified_diff`] to print a unified diff/patch as shown by `git diff` or `diff
+//! -u`. Note that while the unified diff has a decent amount of flexability it is fairly
+//! simplistic and not every formatting may be possible. It's meant to cover common
+//! situations but not cover every advanced usecase. Instead if you need more advanced
+//! printing built your own printer on top of the `Diff::hunks` iterator, for that you can
+//! take inspiration from the builtin printer.
+//!
+//! ```
+//! # use imara_diff::{InternedInput, Diff, Algorithm, BasicLineDiffPrinter, UnifiedDiffConfig};
+//! #
 //!
 //! let before = r#"fn foo() -> Bar {
 //!     let mut foo = 2;
 //!     foo *= 50;
 //!     println!("hello world")
-//! }"#;
+//! }
+//! "#;
 //!
 //! let after = r#"// lorem ipsum
 //! fn foo() -> Bar {
@@ -47,11 +113,17 @@
 //! }
 //! // foo
 //! "#;
-//!
 //! let input = InternedInput::new(before, after);
-//! let diff = diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input));
+//! let mut diff = Diff::compute(Algorithm::Histogram, &input);
+//! diff.postprocess_lines(&input);
+//!
 //! assert_eq!(
-//!     diff,
+//!     diff.unified_diff(
+//!         &BasicLineDiffPrinter(&input.interner),
+//!         UnifiedDiffConfig::default(),
+//!         &input,
+//!     )
+//!     .to_string(),
 //!     r#"@@ -1,5 +1,8 @@
 //! +// lorem ipsum
 //!  fn foo() -> Bar {
@@ -65,99 +137,24 @@
 //! "#
 //! );
 //! ```
-//!
-//! If you want to process the diff in some way you can provide your own implementation of [`Sink`](crate::sink::Sink).
-//! For closures [`Sink`](crate::sink::Sink) is already implemented, so simple [`Sink`]s can be easily added:
-//!
-//! ```
-//! use std::ops::Range;
-//!
-//! use imara_diff::intern::InternedInput;
-//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
-//!
-//! let before = r#"fn foo() -> Bar {
-//!     let mut foo = 2;
-//!     foo *= 50;
-//!     println!("hello world")
-//! }"#;
-//!
-//! let after = r#"// lorem ipsum
-//! fn foo() -> Bar {
-//!     let mut foo = 2;
-//!     foo *= 50;
-//!     println!("hello world");
-//!     println!("{foo}");
-//! }
-//! // foo
-//! "#;
-//!
-//! let mut insertions = Vec::new();
-//! let mut removals = Vec::new();
-//! let mut replacements = Vec::new();
-//!
-//! let input = InternedInput::new(before, after);
-//! let sink = |before: Range<u32>, after: Range<u32>| {
-//!     let hunk_before: Vec<_> = input.before[before.start as usize..before.end as usize]
-//!         .iter()
-//!         .map(|&line| input.interner[line])
-//!         .collect();
-//!     let hunk_after: Vec<_> = input.after[after.start as usize..after.end as usize]
-//!         .iter()
-//!         .map(|&line| input.interner[line])
-//!         .collect();
-//!     if hunk_after.is_empty() {
-//!         removals.push(hunk_before)
-//!     } else if hunk_before.is_empty() {
-//!         insertions.push(hunk_after)
-//!     } else {
-//!         replacements.push((hunk_before, hunk_after))
-//!     }
-//! };
-//! let diff = diff(Algorithm::Histogram, &input, sink);
-//! assert_eq!(&insertions, &[vec!["// lorem ipsum"], vec!["// foo"]]);
-//! assert!(removals.is_empty());
-//! assert_eq!(
-//!     &replacements,
-//!     &[(
-//!         vec!["    println!(\"hello world\")"],
-//!         vec!["    println!(\"hello world\");", "    println!(\"{foo}\");"]
-//!     )]
-//! );
-//! ```
-//!
-//! For `&str` and `&[u8]` imara-diff will compute a line diff by default.
-//! To perform diffs of different tokenizations and collections you can implement the [`TokenSource`](crate::intern::TokenSource) trait.
-//! For example the imara-diff provides an alternative tokenizer for line-diffs that includes the line terminator in the line:
-//!
-//! ```
-//! use imara_diff::intern::InternedInput;
-//! use imara_diff::sink::Counter;
-//! use imara_diff::sources::lines_with_terminator;
-//! use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
-//!
-//! let before = "foo";
-//! let after = "foo\n";
-//!
-//! let input = InternedInput::new(before, after);
-//! let changes = diff(Algorithm::Histogram, &input, Counter::default());
-//! assert_eq!(changes.insertions, 0);
-//! assert_eq!(changes.removals, 0);
-//!
-//! let input = InternedInput::new(lines_with_terminator(before), lines_with_terminator(after));
-//! let changes = diff(Algorithm::Histogram, &input, Counter::default());
-//! assert_eq!(changes.insertions, 1);
-//! assert_eq!(changes.removals, 1);
-//! ```
 
+use std::ops::Range;
+use std::slice;
+
+use crate::util::{strip_common_postfix, strip_common_prefix};
+
+pub use crate::slider_heuristic::{
+    IndentHeuristic, IndentLevel, NoSliderHeuristic, SliderHeuristic,
+};
+pub use intern::{InternedInput, Interner, Token, TokenSource};
 #[cfg(feature = "unified_diff")]
-pub use unified_diff::UnifiedDiffBuilder;
+pub use unified_diff::{BasicLineDiffPrinter, UnifiedDiff, UnifiedDiffConfig, UnifiedDiffPrinter};
 
-use crate::intern::{InternedInput, Token, TokenSource};
-pub use crate::sink::Sink;
 mod histogram;
-pub mod intern;
+mod intern;
 mod myers;
-pub mod sink;
+mod postprocess;
+mod slider_heuristic;
 pub mod sources;
 #[cfg(feature = "unified_diff")]
 mod unified_diff;
@@ -229,42 +226,212 @@ impl Algorithm {
     const ALL: [Self; 2] = [Algorithm::Histogram, Algorithm::Myers];
 }
 
-/// Computes an edit-script that transforms `input.before` into `input.after` using
-/// the specified `algorithm`
-/// The edit-script is passed to `sink.process_change` while it is produced.
-pub fn diff<S: Sink, T>(algorithm: Algorithm, input: &InternedInput<T>, sink: S) -> S::Out {
-    diff_with_tokens(
-        algorithm,
-        &input.before,
-        &input.after,
-        input.interner.num_tokens(),
-        sink,
-    )
+#[derive(Default)]
+pub struct Diff {
+    removed: Vec<bool>,
+    added: Vec<bool>,
 }
 
-/// Computes an edit-script that transforms `before` into `after` using
-/// the specified `algorithm`
-/// The edit-script is passed to `sink.process_change` while it is produced.
-pub fn diff_with_tokens<S: Sink>(
-    algorithm: Algorithm,
-    before: &[Token],
-    after: &[Token],
-    num_tokens: u32,
-    sink: S,
-) -> S::Out {
-    assert!(
-        before.len() < i32::MAX as usize,
-        "imara-diff only supports up to {} tokens",
-        i32::MAX
-    );
-    assert!(
-        after.len() < i32::MAX as usize,
-        "imara-diff only supports up to {} tokens",
-        i32::MAX
-    );
-    match algorithm {
-        Algorithm::Histogram => histogram::diff(before, after, num_tokens, sink),
-        Algorithm::Myers => myers::diff(before, after, num_tokens, sink, false),
-        Algorithm::MyersMinimal => myers::diff(before, after, num_tokens, sink, true),
+impl std::fmt::Debug for Diff {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self.hunks()).finish()
+    }
+}
+
+impl Diff {
+    /// Computes an edit-script that transforms `input.before` into `input.after` using
+    /// the specified `algorithm`
+    pub fn compute<T>(algorithm: Algorithm, input: &InternedInput<T>) -> Diff {
+        let mut diff = Diff::default();
+        diff.compute_with(
+            algorithm,
+            &input.before,
+            &input.after,
+            input.interner.num_tokens(),
+        );
+        diff
+    }
+
+    /// Computes an edit-script that transforms `before` into `after` using
+    /// the specified `algorithm`.
+    pub fn compute_with(
+        &mut self,
+        algorithm: Algorithm,
+        mut before: &[Token],
+        mut after: &[Token],
+        num_tokens: u32,
+    ) {
+        assert!(
+            before.len() < i32::MAX as usize,
+            "imara-diff only supports up to {} tokens",
+            i32::MAX
+        );
+        assert!(
+            after.len() < i32::MAX as usize,
+            "imara-diff only supports up to {} tokens",
+            i32::MAX
+        );
+        self.removed.clear();
+        self.added.clear();
+        self.removed.resize(before.len(), false);
+        self.added.resize(after.len(), false);
+        let common_prefix = strip_common_prefix(&mut before, &mut after) as usize;
+        let common_postfix = strip_common_postfix(&mut before, &mut after);
+        let range = common_prefix..self.removed.len() - common_postfix as usize;
+        let removed = &mut self.removed[range];
+        let range = common_prefix..self.added.len() - common_postfix as usize;
+        let added = &mut self.added[range];
+        match algorithm {
+            Algorithm::Histogram => histogram::diff(before, after, removed, added, num_tokens),
+            Algorithm::Myers => myers::diff(before, after, removed, added, false),
+            Algorithm::MyersMinimal => myers::diff(before, after, removed, added, true),
+        }
+    }
+
+    pub fn count_additions(&self) -> u32 {
+        self.added.iter().map(|&added| added as u32).sum()
+    }
+
+    pub fn count_removals(&self) -> u32 {
+        self.removed.iter().map(|&removed| removed as u32).sum()
+    }
+
+    pub fn is_removed(&self, token_idx: u32) -> bool {
+        self.removed[token_idx as usize]
+    }
+
+    pub fn is_added(&self, token_idx: u32) -> bool {
+        self.added[token_idx as usize]
+    }
+
+    /// Postprocesses the diff to make it more human readable. Certain bvhunks
+    /// have an amigous placement (event in a minimal diff) where they can move
+    /// downward or upward by removing a token (line) at the start and adding
+    /// one at the end (or the other way around). The postprocessing adjust
+    /// these hunks according to a coulple rules:
+    ///
+    /// * Always merge multiple hunks if possible.
+    /// * Always try to create a single MODIFY hunk instead of multiple disjoint
+    ///   ADDED/REMOVED hunks
+    /// * Move sliders as far down as possible.
+    pub fn postprocess_no_heuristic<T>(&mut self, input: &InternedInput<T>) {
+        self.postprocess_with_heuristic(input, NoSliderHeuristic)
+    }
+
+    /// Postprocesses the diff to make it more human readable. Certain bvhunks
+    /// have an amigous placement (event in a minimal diff) where they can move
+    /// downward or upward by removing a token (line) at the start and adding
+    /// one at the end (or the other way around). The postprocessing adjust
+    /// these hunks according to a coulple rules:
+    ///
+    /// * Always merge multiple hunks if possible.
+    /// * Always try to create a single MODIFY hunk instead of multiple disjoint
+    ///   ADDED/REMOVED hunks
+    /// * based on a lines indentation level heuristically compute the most
+    ///   intutive location to split lines.
+    /// * Move sliders as far down as possible.
+    pub fn postprocess_lines<T: AsRef<[u8]>>(&mut self, input: &InternedInput<T>) {
+        self.postprocess_with_heuristic(
+            input,
+            IndentHeuristic::new(|token| {
+                IndentLevel::for_ascii_line(input.interner[token].as_ref().iter().copied(), 8)
+            }),
+        )
+    }
+
+    /// An iterator that yields the changed hunks in this diff
+    pub fn hunks(&self) -> HunkIter<'_> {
+        HunkIter {
+            removed: self.removed.iter(),
+            added: self.added.iter(),
+            pos_before: 0,
+            pos_after: 0,
+        }
+    }
+}
+
+/// A single change in a `Diff` that represents a range of tokens (`before`)
+/// in the first sequence that were replaced by a diffrerent range of tokens
+/// in the second sequence (`after`).
+///
+/// Tokens that are a
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub struct Hunk {
+    pub before: Range<u32>,
+    pub after: Range<u32>,
+}
+
+impl Hunk {
+    /// Can be used instead of `Option::None` for better performance.
+    /// Because `imara-diff` does not support more then `i32::MAX` there is an unused bit pattern that can be used.
+    /// Has some nice properties where it usually is not necessary to check for `None` seperatly:
+    /// Empty ranges fail contains checks and also faills smaller then checks.
+    pub const NONE: Hunk = Hunk {
+        before: u32::MAX..u32::MAX,
+        after: u32::MAX..u32::MAX,
+    };
+
+    /// Inverts a hunk so that it represents a change
+    /// that would undo this hunk.
+    pub fn invert(&self) -> Hunk {
+        Hunk {
+            before: self.after.clone(),
+            after: self.before.clone(),
+        }
+    }
+
+    /// Returns whether tokens are only inserted and not removed in this hunk.
+    pub fn is_pure_insertion(&self) -> bool {
+        self.before.is_empty()
+    }
+
+    /// Returns whether tokens are only removed and not remved in this hunk.
+    pub fn is_pure_removal(&self) -> bool {
+        self.after.is_empty()
+    }
+}
+
+/// Yields all [`Hunk`]s in a file in montonically increasing order.
+/// Montonically increasing means here that the following holds for any two
+/// consequtive [`Hunk`]s `x` and `y`:
+///
+/// ``` no_compile
+/// assert!(x.before.end < y.before.start);
+/// assert!(x.after.end < y.after.start);
+/// ```
+///
+pub struct HunkIter<'diff> {
+    removed: slice::Iter<'diff, bool>,
+    added: slice::Iter<'diff, bool>,
+    pos_before: u32,
+    pos_after: u32,
+}
+
+impl Iterator for HunkIter<'_> {
+    type Item = Hunk;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let removed = (&mut self.removed).take_while(|&&removed| removed).count() as u32;
+            let added = (&mut self.added).take_while(|&&added| added).count() as u32;
+            if removed != 0 || added != 0 {
+                let start_before = self.pos_before;
+                let start_after = self.pos_after;
+                self.pos_before += removed;
+                self.pos_after += added;
+                let hunk = Hunk {
+                    before: start_before..self.pos_before,
+                    after: start_after..self.pos_after,
+                };
+                self.pos_before += 1;
+                self.pos_after += 1;
+                return Some(hunk);
+            } else if self.removed.len() == 0 && self.added.len() == 0 {
+                return None;
+            } else {
+                self.pos_before += 1;
+                self.pos_after += 1;
+            }
+        }
     }
 }

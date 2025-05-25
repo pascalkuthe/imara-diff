@@ -66,13 +66,12 @@
                          }
                      }
                  }
-@@ -730,28 +739,34 @@
-             cursor.set_byte_range(0..usize::MAX);
+@@ -731,27 +740,33 @@
  
              let source_slice = source.slice(..);
--
--            let mut touched = HashSet::new();
  
+-            let mut touched = HashSet::new();
+-
 -            // TODO: we should be able to avoid editing & parsing layers with ranges earlier in the document before the edit
 -
              while let Some(layer_id) = queue.pop_front() {
@@ -80,10 +79,10 @@
 -                touched.insert(layer_id);
 -
                  let layer = &mut self.layers[layer_id];
-+
+ 
 +                // Mark the layer as touched
 +                layer.flags |= LayerUpdateFlags::TOUCHED;
- 
++
                  // If a tree already exists, notify it of changes.
                  if let Some(tree) = &mut layer.tree {
 -                    for edit in edits.iter().rev() {
@@ -138,12 +137,10 @@
  
              Ok(())
          })
-@@ -966,6 +986,16 @@
-     // indent_level_for_line
- 
+@@ -968,6 +988,16 @@
      // TODO: Folding
-+}
-+
+ }
+ 
 +bitflags! {
 +    /// Flags that track the status of a layer
 +    /// in the `Sytaxn::update` function
@@ -152,9 +149,11 @@
 +        const MOVED = 0b010;
 +        const TOUCHED = 0b100;
 +    }
- }
- 
++}
++
  #[derive(Debug)]
+ pub struct LanguageLayer {
+     // mode
 @@ -975,7 +1005,8 @@
      pub config: Arc<HighlightConfiguration>,
      pub(crate) tree: Option<Tree>,

@@ -79,10 +79,10 @@
 -                touched.insert(layer_id);
 -
                  let layer = &mut self.layers[layer_id];
-+
+ 
 +                // Mark the layer as touched
 +                layer.flags |= LayerUpdateFlags::TOUCHED;
- 
++
                  // If a tree already exists, notify it of changes.
                  if let Some(tree) = &mut layer.tree {
 -                    for edit in edits.iter().rev() {

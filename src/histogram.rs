@@ -1,10 +1,7 @@
-use std::ops::Range;
-
 use crate::histogram::lcs::find_lcs;
 use crate::histogram::list_pool::{ListHandle, ListPool};
 use crate::intern::Token;
-use crate::util::{strip_common_postfix, strip_common_prefix};
-use crate::{myers, Sink};
+use crate::myers;
 
 mod lcs;
 mod list_pool;
@@ -16,17 +13,15 @@ struct Histogram {
     pool: ListPool,
 }
 
-pub fn diff<S: Sink>(
-    mut before: &[Token],
-    mut after: &[Token],
+pub fn diff(
+    before: &[Token],
+    after: &[Token],
+    removed: &mut [bool],
+    added: &mut [bool],
     num_tokens: u32,
-    mut sink: S,
-) -> S::Out {
+) {
     let mut histogram = Histogram::new(num_tokens);
-    let prefix = strip_common_prefix(&mut before, &mut after);
-    strip_common_postfix(&mut before, &mut after);
-    histogram.run(before, prefix, after, prefix, &mut sink);
-    sink.finish()
+    histogram.run(before, after, removed, added);
 }
 
 impl Histogram {
@@ -58,25 +53,16 @@ impl Histogram {
     fn run(
         &mut self,
         mut before: &[Token],
-        mut before_off: u32,
         mut after: &[Token],
-        mut after_off: u32,
-        sink: &mut impl Sink,
+        mut removed: &mut [bool],
+        mut added: &mut [bool],
     ) {
         loop {
             if before.is_empty() {
-                if !after.is_empty() {
-                    sink.process_change(
-                        before_off..before_off,
-                        after_off..after_off + after.len() as u32,
-                    );
-                }
+                added.fill(true);
                 return;
             } else if after.is_empty() {
-                sink.process_change(
-                    before_off..before_off + before.len() as u32,
-                    after_off..after_off,
-                );
+                removed.fill(true);
                 return;
             }
 
@@ -84,47 +70,32 @@ impl Histogram {
             match find_lcs(before, after, self) {
                 // no lcs was found, that means that file1 and file2 two have nothing in common
                 Some(lcs) if lcs.len == 0 => {
-                    sink.process_change(
-                        before_off..before_off + before.len() as u32,
-                        after_off..after_off + after.len() as u32,
-                    );
+                    added.fill(true);
+                    removed.fill(true);
                     return;
                 }
                 Some(lcs) => {
                     self.run(
                         &before[..lcs.before_start as usize],
-                        before_off,
                         &after[..lcs.after_start as usize],
-                        after_off,
-                        sink,
+                        &mut removed[..lcs.before_start as usize],
+                        &mut added[..lcs.after_start as usize],
                     );
 
                     // this is equivalent to (tail) recursion but implement as a loop for efficeny reasons
                     let before_end = lcs.before_start + lcs.len;
                     before = &before[before_end as usize..];
-                    before_off += before_end;
+                    removed = &mut removed[before_end as usize..];
 
                     let after_end = lcs.after_start + lcs.len;
                     after = &after[after_end as usize..];
-                    after_off += after_end;
+                    added = &mut added[after_end as usize..];
                 }
                 None => {
                     // we are diffing two extremely large repetitive files
                     // this is a worst case for histogram diff with O(N^2) performance
-                    // fallback to myers to maintain linear time complexity
-                    myers::diff(
-                        before,
-                        after,
-                        0, // not used by myers
-                        |mut before: Range<u32>, mut after: Range<u32>| {
-                            before.start += before_off;
-                            before.end += before_off;
-                            after.start += after_off;
-                            after.end += after_off;
-                            sink.process_change(before, after)
-                        },
-                        false,
-                    );
+                    // fallback to myers to maintain linear time complxity
+                    myers::diff(before, after, removed, added, false);
                     return;
                 }
             }
