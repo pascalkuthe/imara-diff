@@ -243,7 +243,7 @@ fn hand_checked_udiffs() {
 }
 
 #[test]
-// #[cfg(not(miri))]
+#[cfg(not(miri))]
 fn complex_diffs() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
