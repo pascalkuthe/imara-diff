@@ -28,14 +28,14 @@
 //! To compute an input sequence is required. `imara-diff` computes diffs on abstract
 //! sequences represented as a slice of ids/tokens: [`Token`](crate::Token). To create
 //! such a sequence from your input type (for example text) the input needs to be interned.
-//! For that `imara-diff` provides utilites in the form of `InternedInput` struct and
+//! For that `imara-diff` provides utilities in the form of `InternedInput` struct and
 //! `TokenSource` trait to construct it. The [`InternedInput`] contains the two sides of
 //! the diff (used while computing the diff). As well as the interner that allows mapping
-//! back tokens to ther original data.
+//! back tokens to their original data.
 //!
 //! The most common usecase for diff is comparing text. `&str` implements `TokenSource`
-//! by default segmentent the text into lines. So creating an input for a text-based diff
-//! usually looks something like the following:
+//! by default segment the text into lines. So creating an input for a text-based diff usually
+//! looks something like the following:
 //!
 //! ```
 //! # use imara_diff::InternedInput;
@@ -54,7 +54,7 @@
 //! ## Computing the Diff
 //!
 //! A diff of two sequences is represented by the [`Diff`] struct and computed by
-//! [`Diff::compute`] / [`Diff::compute_with`]. Here also an algorithm can be choosen.
+//! [`Diff::compute`] / [`Diff::compute_with`]. Here also an algorithm can be chosen.
 //! In most situations [`Algorithm::Histogram`] is a good choice, refer to the docs
 //! of [`Algorithm`] for more details. After the initial computation the diff can be
 //! postprocessed. If the diff is shown to a human you in some way (even indirectly) you
@@ -78,16 +78,16 @@
 //!
 //! ## Accessing results
 //!
-//! [`Diff`] allows to query wether a particular position was removed/added on either
+//! [`Diff`] allows to query whether a particular position was removed/added on either
 //! side of the diff with [`Diff::is_removed`] / [`Diff::is_added`]. The number
-//! of addtions/removeals can be quickly counted with [`Diff::count_removals`] /
+//! of additions/removals can be quickly counted with [`Diff::count_removals`] /
 //! [`Diff::count_additions`]. The most powerful/useful interface is the hunk iterator
 //! [`Diff::hunks`] which will return a list of additions/removals/modifications in the
 //! order that they appear in the input.
 //!
-//! Finnally if the `unified_diff` feature is enabled a diff can be printed with
+//! Finally if the `unified_diff` feature is enabled a diff can be printed with
 //! [`Diff::unified_diff`] to print a unified diff/patch as shown by `git diff` or `diff
-//! -u`. Note that while the unified diff has a decent amount of flexability it is fairly
+//! -u`. Note that while the unified diff has a decent amount of flexibility it is fairly
 //! simplistic and not every formatting may be possible. It's meant to cover common
 //! situations but not cover every advanced usecase. Instead if you need more advanced
 //! printing built your own printer on top of the `Diff::hunks` iterator, for that you can
@@ -189,7 +189,7 @@ pub enum Algorithm {
     /// produced by the histogram diff are often longer then those produced by Myers algorithm.
     ///
     /// The heuristic used by the histogram diff does not work well for inputs with small (often repeated)
-    /// tokens. For example **character diffs do not work well** as most (english) text is madeup of
+    /// tokens. For example **character diffs do not work well** as most (english) text is made up of
     /// a fairly small set of characters. The `Histogram` algorithm will automatically these cases and
     /// fallback to Myers algorithm. However this detection has a nontrivial overhead, so
     /// if its known upfront that the sort of tokens is very small `Myers` algorithm should
@@ -305,10 +305,10 @@ impl Diff {
     }
 
     /// Postprocesses the diff to make it more human readable. Certain bvhunks
-    /// have an amigous placement (event in a minimal diff) where they can move
+    /// have an ambiguous placement (even in a minimal diff) where they can move
     /// downward or upward by removing a token (line) at the start and adding
     /// one at the end (or the other way around). The postprocessing adjust
-    /// these hunks according to a coulple rules:
+    /// these hunks according to a couple rules:
     ///
     /// * Always merge multiple hunks if possible.
     /// * Always try to create a single MODIFY hunk instead of multiple disjoint
@@ -319,16 +319,16 @@ impl Diff {
     }
 
     /// Postprocesses the diff to make it more human readable. Certain bvhunks
-    /// have an amigous placement (event in a minimal diff) where they can move
+    /// have an ambiguous placement (even in a minimal diff) where they can move
     /// downward or upward by removing a token (line) at the start and adding
     /// one at the end (or the other way around). The postprocessing adjust
-    /// these hunks according to a coulple rules:
+    /// these hunks according to a couple rules:
     ///
     /// * Always merge multiple hunks if possible.
     /// * Always try to create a single MODIFY hunk instead of multiple disjoint
     ///   ADDED/REMOVED hunks
     /// * based on a lines indentation level heuristically compute the most
-    ///   intutive location to split lines.
+    ///   intuitive location to split lines.
     /// * Move sliders as far down as possible.
     pub fn postprocess_lines<T: AsRef<[u8]>>(&mut self, input: &InternedInput<T>) {
         self.postprocess_with_heuristic(
@@ -351,7 +351,7 @@ impl Diff {
 }
 
 /// A single change in a `Diff` that represents a range of tokens (`before`)
-/// in the first sequence that were replaced by a diffrerent range of tokens
+/// in the first sequence that were replaced by a different range of tokens
 /// in the second sequence (`after`).
 ///
 /// Tokens that are a
@@ -364,8 +364,8 @@ pub struct Hunk {
 impl Hunk {
     /// Can be used instead of `Option::None` for better performance.
     /// Because `imara-diff` does not support more then `i32::MAX` there is an unused bit pattern that can be used.
-    /// Has some nice properties where it usually is not necessary to check for `None` seperatly:
-    /// Empty ranges fail contains checks and also faills smaller then checks.
+    /// Has some nice properties where it usually is not necessary to check for `None` separately:
+    /// Empty ranges fail contains checks and also fail smaller then checks.
     pub const NONE: Hunk = Hunk {
         before: u32::MAX..u32::MAX,
         after: u32::MAX..u32::MAX,
@@ -391,9 +391,9 @@ impl Hunk {
     }
 }
 
-/// Yields all [`Hunk`]s in a file in montonically increasing order.
-/// Montonically increasing means here that the following holds for any two
-/// consequtive [`Hunk`]s `x` and `y`:
+/// Yields all [`Hunk`]s in a file in monotonically increasing order.
+/// Monotonically increasing means here that the following holds for any two
+/// consecutive [`Hunk`]s `x` and `y`:
 ///
 /// ``` no_compile
 /// assert!(x.before.end < y.before.start);
