@@ -385,7 +385,7 @@ impl Hunk {
         self.before.is_empty()
     }
 
-    /// Returns whether tokens are only removed and not remved in this hunk.
+    /// Returns whether tokens are only removed and not inserted in this hunk.
     pub fn is_pure_removal(&self) -> bool {
         self.after.is_empty()
     }
