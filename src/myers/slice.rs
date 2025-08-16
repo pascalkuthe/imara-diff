@@ -27,7 +27,7 @@ impl<'a> FileSlice<'a> {
         }
     }
 
-    pub fn borrow(&mut self) -> FileSlice {
+    pub fn borrow(&mut self) -> FileSlice<'_> {
         FileSlice {
             tokens: self.tokens,
             changed: self.changed,
