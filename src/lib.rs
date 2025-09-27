@@ -141,7 +141,10 @@
 use std::ops::Range;
 use std::slice;
 
-use crate::util::{strip_common_postfix, strip_common_prefix};
+use crate::{
+    sources::bytes,
+    util::{strip_common_postfix, strip_common_prefix},
+};
 
 pub use crate::slider_heuristic::{
     IndentHeuristic, IndentLevel, NoSliderHeuristic, SliderHeuristic,
@@ -388,6 +391,35 @@ impl Hunk {
     /// Returns whether tokens are only removed and not inserted in this hunk.
     pub fn is_pure_removal(&self) -> bool {
         self.after.is_empty()
+    }
+
+    /// Performs a byte-diff of the hunk
+    pub fn byte_diff(&self, diff: &mut Diff, input: &InternedInput<&str>) {
+        let Hunk { before, after } = self.clone();
+        let before_bytes: &[u8] = &before
+            .flat_map(|token| input.interner[input.before[token as usize]].bytes())
+            .collect::<Vec<_>>();
+        let after_bytes: &[u8] = &after
+            .flat_map(|token| input.interner[input.after[token as usize]].bytes())
+            .collect::<Vec<_>>();
+        diff.removed.clear();
+        diff.removed.resize(before_bytes.len(), false);
+        diff.added.clear();
+        diff.added.resize(after_bytes.len(), false);
+        if self.is_pure_removal() {
+            diff.removed.fill(true);
+        } else if self.is_pure_insertion() {
+            diff.added.fill(true);
+        } else {
+            let input = InternedInput::new(bytes(before_bytes), bytes(after_bytes));
+            diff.compute_with(
+                Algorithm::Myers,
+                &input.before,
+                &input.after,
+                input.interner.num_tokens(),
+            );
+            diff.postprocess_no_heuristic(&input);
+        }
     }
 }
 
