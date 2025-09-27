@@ -12,6 +12,11 @@ pub fn lines(data: &str) -> Lines<'_> {
     Lines(ByteLines(data.as_bytes()))
 }
 
+/// Returns a [`TokenSource`] that uses the bytes in `data` as Tokens.
+pub fn bytes(data: &[u8]) -> Bytes<'_> {
+    Bytes(data)
+}
+
 /// Returns a [`TokenSource`] that uses the lines in `data` as Tokens. The newline
 /// separator (`\r\n` or `\n`) is included in the emitted tokens. This means that changing
 /// the newline separator from `\r\n` to `\n` (or omitting it fully on the last line) is
@@ -76,6 +81,37 @@ impl<'a> TokenSource for Lines<'a> {
 
     fn estimate_tokens(&self) -> u32 {
         self.0.estimate_tokens()
+    }
+}
+
+/// A [`TokenSource`] that returns the bytes of a byte slice as tokens. See [`bytes`]
+/// for details.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Bytes<'a>(&'a [u8]);
+
+impl<'a> Iterator for Bytes<'a> {
+    type Item = &'a u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((head, rem)) = self.0.split_first() {
+            self.0 = rem;
+            Some(head)
+        } else {
+            None
+        }
+    }
+}
+impl<'a> TokenSource for Bytes<'a> {
+    type Token = &'a u8;
+
+    type Tokenizer = Self;
+
+    fn tokenize(&self) -> Self::Tokenizer {
+        *self
+    }
+
+    fn estimate_tokens(&self) -> u32 {
+        0xFF
     }
 }
 
