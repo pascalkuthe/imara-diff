@@ -163,7 +163,7 @@ impl<T: Hash + Eq> Interner<T> {
         self.tokens.reserve(capacity);
     }
 
-    /// Intern `token` and return a the interned integer.
+    /// Intern `token` and return the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
         match self.table.entry(
