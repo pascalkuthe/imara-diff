@@ -143,18 +143,18 @@ pub struct UnifiedDiff<'a, P: UnifiedDiffPrinter> {
 
 impl<P: UnifiedDiffPrinter> Display for UnifiedDiff<'_, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut pos = 0;
-        let mut before_context_len = 0;
-        let mut after_context_len = 0;
         let first_hunk = self.diff.hunks().next().unwrap_or_default();
-        let mut before_context_start = first_hunk
+        let mut pos = first_hunk
             .before
             .start
             .saturating_sub(self.config.context_len);
+        let mut before_context_start = pos;
         let mut after_context_start = first_hunk
             .after
             .start
             .saturating_sub(self.config.context_len);
+        let mut before_context_len = 0;
+        let mut after_context_len = 0;
         let mut buffer = String::new();
         for hunk in self.diff.hunks() {
             if hunk.before.start - pos > 2 * self.config.context_len {
