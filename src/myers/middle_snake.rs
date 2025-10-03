@@ -6,6 +6,7 @@ use crate::util::{common_postfix, common_prefix};
 const SNAKE_CNT: u32 = 20;
 const K_HEUR: u32 = 4;
 
+#[derive(Debug)]
 pub struct MiddleSnakeSearch<const BACK: bool> {
     kvec: NonNull<i32>,
     kmin: i32,
@@ -98,6 +99,8 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
         let mut res = None;
         let mut k = self.kmax;
         while k >= self.kmin {
+            #[cfg(test)]
+            cov_mark::hit!(SPLIT_SEARCH_ITER);
             let mut token_idx1 = if BACK {
                 if self.x_pos_at_diagonal(k - 1) < self.x_pos_at_diagonal(k + 1) {
                     self.x_pos_at_diagonal(k - 1)
@@ -249,6 +252,7 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
     }
 }
 
+#[derive(Debug)]
 pub enum SearchResult {
     Snake,
     Found { token_idx1: i32, token_idx2: i32 },
