@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "cov-mark"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f1d92727879fb4f24cec33a35e3bff74035541326cbc12ad44ba8886d1927b0"
+
+[[package]]
 name = "dissimilar"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -37,6 +43,7 @@ dependencies = [
 name = "imara-diff"
 version = "0.2.0"
 dependencies = [
+ "cov-mark",
  "expect-test",
  "hashbrown",
  "memchr",

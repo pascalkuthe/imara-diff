@@ -99,7 +99,7 @@ impl Myers {
             unsafe { MiddleSnakeSearch::<false>::new(self.kforward, file1, file2) };
         let mut backwards_search =
             unsafe { MiddleSnakeSearch::<true>::new(self.kbackward, file1, file2) };
-        let is_odd = (file2.len() - file2.len()) & 1 != 0;
+        let is_odd = file2.len().wrapping_sub(file1.len()) & 1 != 0;
 
         let mut ec = 0;
 
@@ -111,6 +111,8 @@ impl Myers {
                     backwards_search.contains(k)
                         && backwards_search.x_pos_at_diagonal(k) <= token_idx1
                 }) {
+                    #[cfg(test)]
+                    cov_mark::hit!(ODD_SPLIT);
                     match res {
                         SearchResult::Snake => found_snake = true,
                         SearchResult::Found {
@@ -135,6 +137,8 @@ impl Myers {
                 if let Some(res) = backwards_search.run(file1, file2, |k, token_idx1| {
                     forward_search.contains(k) && token_idx1 <= forward_search.x_pos_at_diagonal(k)
                 }) {
+                    #[cfg(test)]
+                    cov_mark::hit!(EVEN_SPLIT);
                     match res {
                         SearchResult::Snake => found_snake = true,
                         SearchResult::Found {
