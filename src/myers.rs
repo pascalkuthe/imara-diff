@@ -105,7 +105,7 @@ impl Myers {
             unsafe { MiddleSnakeSearch::<false>::new(self.kforward, file1, file2) };
         let mut backwards_search =
             unsafe { MiddleSnakeSearch::<true>::new(self.kbackward, file1, file2) };
-        let is_odd = (file2.len() - file2.len()) & 1 != 0;
+        let is_odd = file2.len().wrapping_sub(file1.len()) & 1 != 0;
 
         let mut ec = 0;
 
