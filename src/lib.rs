@@ -429,7 +429,7 @@ impl Hunk {
                 &diff_input.after,
                 diff_input.interner.num_tokens(),
             );
-            diff.postprocess_no_heuristic(&diff_input);
+            diff.postprocess_no_heuristic(diff_input);
         }
     }
 }
