@@ -87,7 +87,7 @@ impl<'a> TokenSource for Lines<'a> {
 }
 
 /// A [`TokenSource`] that returns the words of a string as tokens. See
-/// [`bytes`] for details.
+/// [`words`] for details.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Words<'a>(&'a str);
 
