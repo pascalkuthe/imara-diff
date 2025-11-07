@@ -100,18 +100,16 @@ impl<'a> Iterator for Words<'a> {
         }
 
         let initial = self.0.chars().next().unwrap();
-        if !initial.is_alphanumeric() {
-            let (char, rem) = self.0.split_at(initial.len_utf8());
-            self.0 = rem;
-            return Some(char);
-        }
+        let word_len = if initial.is_alphanumeric() {
+            self.0
+                .char_indices()
+                .find(|(_, c)| !c.is_alphanumeric())
+                .map_or(self.0.len(), |(index, _)| index)
+        } else {
+            initial.len_utf8()
+        };
 
-        let end_index = self
-            .0
-            .char_indices()
-            .find(|(_, c)| !c.is_alphanumeric())
-            .map_or(self.0.len(), |(index, _)| index);
-        let (word, rem) = self.0.split_at(end_index);
+        let (word, rem) = self.0.split_at(word_len);
         self.0 = rem;
         Some(word)
     }
