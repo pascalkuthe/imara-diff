@@ -17,7 +17,7 @@ exclude = [
 ]
 
 [dependencies]
-hashbrown = { version = "0.15", default-features = false, features = ["default-hasher", "inline-more"] }
+hashbrown = { version = ">=0.15,<=0.16", default-features = false, features = ["default-hasher", "inline-more"] }
 memchr = "2.7.4"
 
 [features]
@@ -26,6 +26,7 @@ unified_diff = []
 
 [dev-dependencies]
 # criterion = "0.4.0"
+cov-mark = "2.1.0"
 expect-test = "1.4.0"
 # git-repository = "0.25.0"
 # similar = { version = "2.2.0", features = ["bytes"] }
