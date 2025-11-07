@@ -401,19 +401,18 @@ impl Hunk {
         diff: &mut Diff,
     ) {
         let Hunk { before, after } = self.clone();
-        let before_words = before
-            .map(|index| input.before[index as usize])
-            .map(|token| input.interner[token])
-            .flat_map(|line| words(line))
-            .collect::<Vec<_>>();
-        let after_words = after
-            .map(|index| input.after[index as usize])
-            .map(|token| input.interner[token])
-            .flat_map(|line| words(line))
-            .collect::<Vec<_>>();
-        diff_input.update_before(before_words.into_iter());
-        diff_input.update_after(after_words.into_iter());
-
+        diff_input.update_before(
+            before
+                .map(|index| input.before[index as usize])
+                .map(|token| input.interner[token])
+                .flat_map(|line| words(line)),
+        );
+        diff_input.update_after(
+            after
+                .map(|index| input.after[index as usize])
+                .map(|token| input.interner[token])
+                .flat_map(|line| words(line)),
+        );
         diff.removed.clear();
         diff.removed.resize(diff_input.before.len(), false);
         diff.added.clear();
