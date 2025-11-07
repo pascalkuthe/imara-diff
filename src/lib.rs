@@ -142,7 +142,7 @@ use std::ops::Range;
 use std::slice;
 
 use crate::{
-    sources::bytes,
+    sources::words,
     util::{strip_common_postfix, strip_common_prefix},
 };
 
@@ -393,32 +393,43 @@ impl Hunk {
         self.after.is_empty()
     }
 
-    /// Performs a byte-diff of the hunk
-    pub fn byte_diff(&self, diff: &mut Diff, input: &InternedInput<&str>) {
+    /// Performs a word-diff of the hunk
+    pub fn word_diff<'a>(
+        &self,
+        input: &InternedInput<&'a str>,
+        diff_input: &mut InternedInput<&'a str>,
+        diff: &mut Diff,
+    ) {
         let Hunk { before, after } = self.clone();
-        let before_bytes: &[u8] = &before
-            .flat_map(|token| input.interner[input.before[token as usize]].bytes())
+        let before_words = before
+            .map(|index| input.before[index as usize])
+            .map(|token| input.interner[token])
+            .flat_map(|line| words(line))
             .collect::<Vec<_>>();
-        let after_bytes: &[u8] = &after
-            .flat_map(|token| input.interner[input.after[token as usize]].bytes())
+        let after_words = after
+            .map(|index| input.after[index as usize])
+            .map(|token| input.interner[token])
+            .flat_map(|line| words(line))
             .collect::<Vec<_>>();
+        diff_input.update_before(before_words.into_iter());
+        diff_input.update_after(after_words.into_iter());
+
         diff.removed.clear();
-        diff.removed.resize(before_bytes.len(), false);
+        diff.removed.resize(diff_input.before.len(), false);
         diff.added.clear();
-        diff.added.resize(after_bytes.len(), false);
+        diff.added.resize(diff_input.after.len(), false);
         if self.is_pure_removal() {
             diff.removed.fill(true);
         } else if self.is_pure_insertion() {
             diff.added.fill(true);
         } else {
-            let input = InternedInput::new(bytes(before_bytes), bytes(after_bytes));
             diff.compute_with(
                 Algorithm::Myers,
-                &input.before,
-                &input.after,
-                input.interner.num_tokens(),
+                &diff_input.before,
+                &diff_input.after,
+                diff_input.interner.num_tokens(),
             );
-            diff.postprocess_no_heuristic(&input);
+            diff.postprocess_no_heuristic(&diff_input);
         }
     }
 }

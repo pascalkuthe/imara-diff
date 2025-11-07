@@ -12,9 +12,11 @@ pub fn lines(data: &str) -> Lines<'_> {
     Lines(ByteLines(data.as_bytes()))
 }
 
-/// Returns a [`TokenSource`] that uses the bytes in `data` as Tokens.
-pub fn bytes(data: &[u8]) -> Bytes<'_> {
-    Bytes(data)
+/// Returns a [`TokenSource`] that uses the words in `data` as Tokens. A word is
+/// a sequence of alphanumeric characters as determined by
+/// `char::is_alphanumeric`. Any other characters are their own word.
+pub fn words(data: &str) -> Words<'_> {
+    Words(data)
 }
 
 /// Returns a [`TokenSource`] that uses the lines in `data` as Tokens. The newline
@@ -84,25 +86,38 @@ impl<'a> TokenSource for Lines<'a> {
     }
 }
 
-/// A [`TokenSource`] that returns the bytes of a byte slice as tokens. See [`bytes`]
-/// for details.
+/// A [`TokenSource`] that returns the words of a string as tokens. See
+/// [`bytes`] for details.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Bytes<'a>(&'a [u8]);
+pub struct Words<'a>(&'a str);
 
-impl<'a> Iterator for Bytes<'a> {
-    type Item = &'a u8;
+impl<'a> Iterator for Words<'a> {
+    type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((head, rem)) = self.0.split_first() {
-            self.0 = rem;
-            Some(head)
-        } else {
-            None
+        if self.0.is_empty() {
+            return None;
         }
+
+        let initial = self.0.chars().next().unwrap();
+        if !initial.is_alphanumeric() {
+            let (char, rem) = self.0.split_at(initial.len_utf8());
+            self.0 = rem;
+            return Some(char);
+        }
+
+        let end_index = self
+            .0
+            .char_indices()
+            .find(|(_, c)| !c.is_alphanumeric())
+            .map_or(self.0.len(), |(index, _)| index);
+        let (word, rem) = self.0.split_at(end_index);
+        self.0 = rem;
+        Some(word)
     }
 }
-impl<'a> TokenSource for Bytes<'a> {
-    type Token = &'a u8;
+impl<'a> TokenSource for Words<'a> {
+    type Token = &'a str;
 
     type Tokenizer = Self;
 
@@ -111,7 +126,7 @@ impl<'a> TokenSource for Bytes<'a> {
     }
 
     fn estimate_tokens(&self) -> u32 {
-        0xFF
+        (self.0.len() / 3) as u32
     }
 }
 
