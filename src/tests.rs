@@ -7,6 +7,7 @@ use expect_test::{expect, expect_file};
 // use git_repository as git;
 
 use crate::intern::InternedInput;
+use crate::sources::words;
 use crate::unified_diff::BasicLineDiffPrinter;
 use crate::{Algorithm, Diff, UnifiedDiffConfig};
 
@@ -204,7 +205,7 @@ fn simple_insert() {
 }
 
 #[test]
-fn hunk_byte_diff_pure() {
+fn hunk_word_diff_pure() {
     let before = r#"fn foo() -> Bar{
     let mut foo = 2.0;
     foo *= 100 / 2;
@@ -216,21 +217,24 @@ fn hunk_byte_diff_pure() {
 }"#;
     let mut input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
-        println!("{algorithm:?}");
+        let mut diff_input = InternedInput::default();
         let mut d = Diff::default();
+
+        println!("{algorithm:?}");
 
         let mut diff = Diff::compute(algorithm, &input);
         diff.postprocess_lines(&input);
+
         let mut hunks = diff.hunks();
         let hunk = hunks.next().expect("missing first hunk");
-        hunk.byte_diff(&mut d, &input);
+        hunk.word_diff(&input, &mut diff_input, &mut d);
         let mut h = d.hunks();
         let first = h.next().expect("missing first inner hunk");
         assert!(first.is_pure_insertion());
         assert_eq!(first.before, 0..0);
         assert_eq!(
             first.after,
-            0.."    println(\"hello world\")\n".len() as u32
+            0..words("    println(\"hello world\")\n").count() as u32
         );
         assert_eq!(h.next(), None);
         assert_eq!(hunks.next(), None);
@@ -239,55 +243,63 @@ fn hunk_byte_diff_pure() {
 
         let mut diff = Diff::compute(algorithm, &input);
         diff.postprocess_lines(&input);
+
         let mut hunks = diff.hunks();
         let hunk = hunks.next().expect("missing first hunk");
-        hunk.byte_diff(&mut d, &input);
+        hunk.word_diff(&input, &mut diff_input, &mut d);
         let mut h = d.hunks();
         let first = h.next().expect("missing first inner hunk");
         assert!(first.is_pure_removal());
         assert_eq!(
             first.before,
-            0.."    println(\"hello world\")\n".len() as u32
+            0..words("    println(\"hello world\")\n").count() as u32
         );
         assert_eq!(first.after, 0..0);
         assert_eq!(h.next(), None);
         assert_eq!(hunks.next(), None);
+
         swap(&mut input.before, &mut input.after);
     }
 }
 
 #[test]
-fn hunk_byte_diff_modify() {
-    let before = r#"fn foo() -> Bar{
+fn hunk_word_diff_modify() {
+    let before = r#"fn foo() -> Bar {
     let mut foo = 2.0;
     foo *= 100 / 2;
 }"#;
-    let after = r#"fn foo() -> Bar{
-    let mut foo = 12.0;
+    let after = r#"fn foo() -> Bar {
+    let mut foo = 3.0 * 2.0;
     foo += 100 / 2;
 }"#;
     let mut input = InternedInput::new(before, after);
     for algorithm in Algorithm::ALL {
-        println!("{algorithm:?}");
+        let mut diff_input = InternedInput::default();
         let mut d = Diff::default();
+
+        println!("{algorithm:?}");
 
         let mut diff = Diff::compute(algorithm, &input);
         diff.postprocess_lines(&input);
+
         let mut hunks = diff.hunks();
         let hunk = hunks.next().expect("missing first hunk");
-        hunk.byte_diff(&mut d, &input);
+        hunk.word_diff(&input, &mut diff_input, &mut d);
         let mut h = d.hunks();
         let first = h.next().expect("missing first inner hunk");
         assert!(first.is_pure_insertion());
-        let off = r#"    let mut foo = "#.len() as u32;
+        let off = words("    let mut foo = ").count() as u32;
         assert_eq!(first.before, off..off);
-        assert_eq!(first.after, off..1 + off);
+        let ins = words("3.0 * ").count() as u32;
+        assert_eq!(first.after, off..ins + off);
         let second = h.next().expect("missing second inner hunk");
-        let off = r#"    let mut foo = 2.0;
-    foo "#
-            .len() as u32;
+        let off = words(
+            r#"    let mut foo = 2.0;
+    foo "#,
+        )
+        .count() as u32;
         assert_eq!(second.before, off..1 + off);
-        assert_eq!(second.after, 1 + off..2 + off);
+        assert_eq!(second.after, ins + off..1 + ins + off);
         assert_eq!(h.next(), None);
         assert_eq!(hunks.next(), None);
 
@@ -295,20 +307,24 @@ fn hunk_byte_diff_modify() {
 
         let mut diff = Diff::compute(algorithm, &input);
         diff.postprocess_lines(&input);
+
         let mut hunks = diff.hunks();
         let hunk = hunks.next().expect("missing first hunk");
-        hunk.byte_diff(&mut d, &input);
+        hunk.word_diff(&input, &mut diff_input, &mut d);
         let mut h = d.hunks();
         let first = h.next().expect("missing first inner hunk");
         assert!(first.is_pure_removal());
-        let off = r#"    let mut foo = "#.len() as u32;
-        assert_eq!(first.before, off..1 + off);
+        let off = words("    let mut foo = ").count() as u32;
+        let rem = words("3.0 * ").count() as u32;
+        assert_eq!(first.before, off..rem + off);
         assert_eq!(first.after, off..off);
         let second = h.next().expect("missing second inner hunk");
-        let off = r#"    let mut foo = 2.0;
-    foo "#
-            .len() as u32;
-        assert_eq!(second.before, 1 + off..2 + off);
+        let off = words(
+            r#"    let mut foo = 2.0;
+    foo "#,
+        )
+        .count() as u32;
+        assert_eq!(second.before, rem + off..1 + rem + off);
         assert_eq!(second.after, off..1 + off);
         assert_eq!(h.next(), None);
         assert_eq!(hunks.next(), None);
