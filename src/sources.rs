@@ -14,7 +14,8 @@ pub fn lines(data: &str) -> Lines<'_> {
 
 /// Returns a [`TokenSource`] that uses the words in `data` as Tokens. A word is
 /// a sequence of alphanumeric characters as determined by
-/// `char::is_alphanumeric`. Any other characters are their own word.
+/// `char::is_alphanumeric`, or a sequence of just the space character ' '. Any
+/// other characters are their own word.
 pub fn words(data: &str) -> Words<'_> {
     Words(data)
 }
