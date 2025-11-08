@@ -12,6 +12,16 @@ use crate::unified_diff::BasicLineDiffPrinter;
 use crate::{Algorithm, Diff, UnifiedDiffConfig};
 
 #[test]
+fn words_tokenizer() {
+    let text = "Hello,  imara!\n (foo-bar)";
+    let tokens = words(text).collect::<Vec<_>>();
+    assert_eq!(
+        tokens,
+        vec!["Hello", ",", "  ", "imara", "!", "\n", " ", "(", "foo", "-", "bar", ")"]
+    );
+}
+
+#[test]
 fn postprocess() {
     let before = r#"
        /*
@@ -448,6 +458,27 @@ fn hunk_word_diff_modify() {
 
         swap(&mut input.before, &mut input.after);
     }
+}
+
+#[test]
+fn large_file() {
+    println!("reading files");
+    let before = std::fs::read_to_string("/tmp/before.html").expect("bad file read");
+    let after = std::fs::read_to_string("/tmp/after.html").expect("bad file read");
+    println!("interning");
+    let input = InternedInput::new(before.as_str(), after.as_str());
+    println!("initial diff");
+    let diff = Diff::compute(Algorithm::Myers, &input);
+
+    let mut word_input = InternedInput::default();
+    let mut word_diff = Diff::default();
+    for (i, hunk) in diff.hunks().enumerate() {
+        println!("+++ Hunk {i}");
+        hunk.word_diff(&input, &mut word_input, &mut word_diff);
+        println!("word diff count {}", word_diff.hunks().count());
+        println!("--- Hunk {i}");
+    }
+    println!("done");
 }
 
 pub fn project_root() -> PathBuf {
