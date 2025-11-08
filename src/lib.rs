@@ -138,11 +138,12 @@
 //! );
 //! ```
 
+use std::hash::Hash;
 use std::ops::Range;
 use std::slice;
 
 use crate::{
-    sources::words,
+    sources::{chars, words},
     util::{strip_common_postfix, strip_common_prefix},
 };
 
@@ -400,18 +401,44 @@ impl Hunk {
         diff_input: &mut InternedInput<&'a str>,
         diff: &mut Diff,
     ) {
+        self.granular_diff(words, input, diff_input, diff)
+    }
+
+    /// Performs a character-diff of the hunk
+    pub fn char_diff(
+        &self,
+        input: &InternedInput<&str>,
+        diff_input: &mut InternedInput<char>,
+        diff: &mut Diff,
+    ) {
+        self.granular_diff(chars, input, diff_input, diff)
+    }
+
+    /// Performs a granular diff of the hunk based on a given tokenizer. For
+    /// instance, this can be used to compute a word-diff.
+    pub fn granular_diff<'a, F, I, T>(
+        &self,
+        tokenizer: F,
+        input: &InternedInput<&'a str>,
+        diff_input: &mut InternedInput<T>,
+        diff: &mut Diff,
+    ) where
+        F: Fn(&'a str) -> I,
+        I: Iterator<Item = T>,
+        T: Eq + Hash,
+    {
         let Hunk { before, after } = self.clone();
         diff_input.update_before(
             before
                 .map(|index| input.before[index as usize])
                 .map(|token| input.interner[token])
-                .flat_map(|line| words(line)),
+                .flat_map(|line| tokenizer(line)),
         );
         diff_input.update_after(
             after
                 .map(|index| input.after[index as usize])
                 .map(|token| input.interner[token])
-                .flat_map(|line| words(line)),
+                .flat_map(|line| tokenizer(line)),
         );
         diff.removed.clear();
         diff.removed.resize(diff_input.before.len(), false);
