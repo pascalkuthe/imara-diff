@@ -100,7 +100,12 @@ impl<'a> Iterator for Words<'a> {
         }
 
         let initial = self.0.chars().next().unwrap();
-        let word_len = if initial.is_alphanumeric() {
+        let word_len = if initial == ' ' {
+            self.0
+                .char_indices()
+                .find(|(_, c)| *c != ' ')
+                .map_or(self.0.len(), |(index, _)| index)
+        } else if initial.is_alphanumeric() {
             self.0
                 .char_indices()
                 .find(|(_, c)| !c.is_alphanumeric())
