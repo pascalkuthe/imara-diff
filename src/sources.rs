@@ -109,7 +109,7 @@ impl<'a> Iterator for Words<'a> {
         } else if initial.is_alphanumeric() {
             self.0
                 .char_indices()
-                .find(|(_, c)| !c.is_alphanumeric() && c != '_')
+                .find(|(_, c)| !c.is_alphanumeric() && *c != '_')
                 .map_or(self.0.len(), |(index, _)| index)
         } else {
             initial.len_utf8()
