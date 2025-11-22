@@ -13,11 +13,11 @@ use crate::{Algorithm, Diff, UnifiedDiffConfig};
 
 #[test]
 fn words_tokenizer() {
-    let text = "Hello,  imara!\n (foo-bar)";
+    let text = "Hello,  imara!\n (foo-bar_baz)";
     let tokens = words(text).collect::<Vec<_>>();
     assert_eq!(
         tokens,
-        vec!["Hello", ",", "  ", "imara", "!", "\n", " ", "(", "foo", "-", "bar", ")"]
+        vec!["Hello", ",", "  ", "imara", "!", "\n", " ", "(", "foo", "-", "bar_baz", ")"]
     );
 }
 
