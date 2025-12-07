@@ -2,38 +2,6 @@
 
 This directory contains fuzz tests for imara-diff using [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html).
 
-## Fuzz Targets
-
-The following fuzz targets are available:
-
-### 1. `comprehensive_diff`
-Tests all three diff algorithms (Myers, Histogram, MyersMinimal) with:
-- Computing diffs on arbitrary string inputs
-- Postprocessing with no heuristic and line heuristic
-- Unified diff printing
-- Basic queries (count_additions, count_removals, is_added, is_removed)
-- Hunks iteration
-
-### 2. `diff_compute_with`
-Tests the lower-level `compute_with` API that works directly with Token sequences:
-- Creating arbitrary token sequences
-- Computing diffs with all algorithms
-- Querying individual token states
-- Iterating through hunks
-
-### 3. `postprocess_heuristics`
-Tests postprocessing with different heuristics:
-- No heuristic
-- Line heuristic (default indent-based)
-- Custom indent heuristic with different tab sizes
-- Validates hunk ranges are valid after postprocessing
-
-### 4. `unified_diff_printer`
-Tests unified diff printing with:
-- Different context lengths (0-10)
-- Various input combinations
-- Validates output format (lines start with ' ', '+', '-', or '@')
-
 ## Running Fuzz Tests
 
 ### Prerequisites
@@ -52,7 +20,7 @@ cargo +nightly fuzz run comprehensive_diff -- -runs=1000000
 ### Running all targets
 ```bash
 for target in comprehensive_diff diff_compute_with postprocess_heuristics unified_diff_printer; do
-    cargo +nightly fuzz run $target -- -max_total_time=60
+    cargo +nightly fuzz run --release $target -- -max_total_time=60
 done
 ```
 

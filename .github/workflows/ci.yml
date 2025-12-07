@@ -109,6 +109,6 @@ jobs:
       - name: Run fuzz tests
         run: |
           # Run each fuzz target for 45 seconds (total ~3 minutes for 4 targets)
-          for target in comprehensive_diff diff_compute_with postprocess_heuristics unified_diff_printer; do
-            cargo fuzz run $target -- -max_total_time=45 -runs=0
+          for target in unified_diff_printer postprocess_heuristics comprehensive_diff diff_compute_with; do
+            cargo fuzz run $target --release -- -max_total_time=45
           done
