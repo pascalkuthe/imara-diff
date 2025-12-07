@@ -27,10 +27,10 @@
 //!
 //! ## Preparing the input
 //! To compute a diff, an input sequence is required. `imara-diff` computes diffs on abstract
-//! sequences represented as a slice of IDs/tokens: [`Token`](crate::Token). To create
+//! sequences represented as a slice of IDs/tokens: [`Token`]. To create
 //! such a sequence from your input type (for example, text), the input needs to be interned.
-//! For that `imara-diff` provides utilities in the form of `InternedInput` struct and
-//! `TokenSource` trait to construct it. The [`InternedInput`] contains the two sides of
+//! For that `imara-diff` provides utilities in the form of the [`InternedInput`] struct and
+//! the `TokenSource` trait to construct it. [`InternedInput`] contains the two sides of
 //! the diff (used while computing the diff). As well as the interner that allows mapping
 //! back tokens to their original data.
 //!
@@ -47,7 +47,7 @@
 //! assert_eq!(input.interner[input.before[0]], "abc\n");
 //! ```
 //!
-//! Note that interning inputs is optional and you could choose a different strategy
+//! Note that interning inputs is optional, and you could choose a different strategy
 //! for creating a sequence of tokens. Instead of using the [`Diff::compute`] function,
 //! [`Diff::compute_with`] can be used to provide a list of tokens directly, entirely
 //! bypassing the interning step.
@@ -57,10 +57,13 @@
 //! A diff of two sequences is represented by the [`Diff`] struct and computed by
 //! [`Diff::compute`] / [`Diff::compute_with`]. An algorithm can also be chosen here.
 //! In most situations, [`Algorithm::Histogram`] is a good choice; refer to the docs
-//! of [`Algorithm`] for more details. After the initial computation, the diff can be
-//! postprocessed. If the diff is shown to a human in some way (even indirectly), you
-//! always want to use this. However, when only counting the number of changed tokens
-//! quickly, this can be skipped. The postprocessing allows you to provide your own
+//! of [`Algorithm`] for more details.
+//!
+//! After the initial computation, the diff can be *postprocessed*. If the diff is shown
+//! to a human in some way (even indirectly), you always want to use this.
+//!
+//! However, when only counting the number of changed tokens quickly, this can be skipped.
+//! The postprocessing allows you to provide your own
 //! heuristic for selecting a slider position. An indentation-based heuristic is provided,
 //! which is a good fit for all text-based line diffs. The internals of the heuristic are
 //! public, so a tweaked heuristic can be built on top.
@@ -91,7 +94,7 @@
 //! -u`. Note that while the unified diff has a decent amount of flexibility, it is fairly
 //! simplistic and not every formatting may be possible. It's meant to cover common
 //! situations but not cover every advanced use case. Instead, if you need more advanced
-//! printing, build your own printer on top of the `Diff::hunks` iterator; for that, you can
+//! printing, build your own printer on top of the [`Diff::hunks`] iterator; for that, you can
 //! take inspiration from the built-in printer.
 //!
 //! ```
@@ -230,12 +233,13 @@ impl Algorithm {
 /// Represents the difference between two sequences of tokens.
 ///
 /// A `Diff` stores which tokens were removed from the first sequence and which tokens were added to the second sequence.
-/// The internal representation uses two boolean vectors that track changes for each token position.
 #[derive(Default)]
 pub struct Diff {
-    /// Tracks which tokens were removed from the first sequence (before).
+    /// Tracks which tokens were removed from the first sequence (`before`), with
+    /// one entry for each one in the `before` sequence.
     removed: Vec<bool>,
-    /// Tracks which tokens were added to the second sequence (after).
+    /// Tracks which tokens were added to the second sequence (`after`), with
+    /// one entry for each one in the `after` sequence.
     added: Vec<bool>,
 }
 
@@ -300,12 +304,12 @@ impl Diff {
         self.added.iter().map(|&added| added as u32).sum()
     }
 
-    /// Returns the total number of tokens that were removed from the first sequence.
+    /// Returns the total number of tokens that were removed from the first sequence (`before`).
     pub fn count_removals(&self) -> u32 {
         self.removed.iter().map(|&removed| removed as u32).sum()
     }
 
-    /// Returns `true` if the token at the given index was removed from the first sequence.
+    /// Returns `true` if the token at the given index was removed from the first sequence (`before`).
     ///
     /// # Panics
     ///
@@ -314,11 +318,11 @@ impl Diff {
         self.removed[token_idx as usize]
     }
 
-    /// Returns `true` if the token at the given index was added to the second sequence.
+    /// Returns `true` if the token at the given index was added to the second sequence (`after`).
     ///
     /// # Panics
     ///
-    /// Panics if `token_idx` is out of bounds for the second sequence.
+    /// Panics if `token_idx` is out of bounds for the second sequence (`after`).
     pub fn is_added(&self, token_idx: u32) -> bool {
         self.added[token_idx as usize]
     }
@@ -358,7 +362,7 @@ impl Diff {
         )
     }
 
-    /// An iterator that yields the changed hunks in this diff
+    /// Return an iterator that yields the changed hunks in this diff.
     pub fn hunks(&self) -> HunkIter<'_> {
         HunkIter {
             removed: self.removed.iter(),
@@ -377,17 +381,18 @@ impl Diff {
 /// should be replaced with tokens from the `after` range.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Hunk {
-    /// The range of token indices in the first sequence that were removed.
+    /// The range of token indices in the first sequence (`before`) that were removed.
     pub before: Range<u32>,
-    /// The range of token indices in the second sequence that were added.
+    /// The range of token indices in the second sequence (`after`) that were added.
     pub after: Range<u32>,
 }
 
 impl Hunk {
     /// Can be used instead of `Option::None` for better performance.
-    /// Because `imara-diff` does not support more then `i32::MAX` there is an unused bit pattern that can be used.
-    /// Has some nice properties where it usually is not necessary to check for `None` separately:
-    /// Empty ranges fail contains checks and also fail smaller then checks.
+    /// Because `imara-diff` does not support more than `i32::MAX` there is an unused bit pattern that can be used.
+    ///
+    /// It has some nice properties where it usually is not necessary to check for `None` separately:
+    /// Empty ranges fail contains checks and also fail smaller than checks.
     pub const NONE: Hunk = Hunk {
         before: u32::MAX..u32::MAX,
         after: u32::MAX..u32::MAX,

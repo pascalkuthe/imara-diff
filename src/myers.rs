@@ -186,7 +186,7 @@ impl Myers {
             // if some of them have reached an "interesting" path. Our
             // measure is a function of the distance from the diagonal
             // corner (i1 + i2) penalized with the distance from the
-            // mid diagonal itself. If this value is above the current
+            // mid-diagonal itself. If this value is above the current
             // edit cost times a magic factor (XDL_K_HEUR) we consider
             // it interesting.
             if found_snake && ec > HEUR_MIN_COST {
@@ -252,7 +252,7 @@ struct Split {
 }
 
 // /// the mapping performed during preprocessing makes it impossible to directly call
-// /// the `sink` during the diff itself. Instead `file.changed` is set to true for all
+// /// the `sink` during the diff itself. Instead, `file.changed` is set to true for all
 // /// tokens that are changed
 // /// below these arrays are used to call the sink function
 // fn process_changes_with_sink(

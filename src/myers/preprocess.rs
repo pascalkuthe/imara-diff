@@ -11,9 +11,9 @@ pub fn preprocess<'a>(
     removed: &'a mut [bool],
     added: &'a mut [bool],
 ) -> (PreprocessedFile, PreprocessedFile) {
-    let (occurances_before, occurances_after) = token_occurrences(before, after);
-    let file1 = PreprocessedFile::new(&occurances_before, before, removed);
-    let file2 = PreprocessedFile::new(&occurances_after, after, added);
+    let (occurrences_before, occurrences_after) = token_occurrences(before, after);
+    let file1 = PreprocessedFile::new(&occurrences_before, before, removed);
+    let file2 = PreprocessedFile::new(&occurrences_after, after, added);
     (file1, file2)
 }
 

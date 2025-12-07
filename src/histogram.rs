@@ -22,8 +22,8 @@ struct Histogram {
 ///
 /// # Parameters
 ///
-/// * `before` - The token sequence from the first file
-/// * `after` - The token sequence from the second file
+/// * `before` - The token sequence from the first file, before changes.
+/// * `after` - The token sequence from the second file, after changes.
 /// * `removed` - Output array marking removed tokens
 /// * `added` - Output array marking added tokens
 /// * `num_tokens` - The total number of distinct tokens

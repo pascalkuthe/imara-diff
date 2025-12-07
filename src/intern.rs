@@ -48,7 +48,7 @@ pub trait TokenSource {
     fn estimate_tokens(&self) -> u32;
 }
 
-/// Two lists of interned [tokens](crate::intern::Token) that a [`Diff`](crate::Diff) can be computed from.
+/// Two lists of interned [tokens](Token) that a [`Diff`](crate::Diff) can be computed from.
 ///
 /// A token represents the smallest possible unit of change during a diff.
 /// For text this is usually a line, a word or a single character.
@@ -72,6 +72,8 @@ impl<T> InternedInput<T> {
     ///
     /// This removes all tokens from both the before and after sequences, as well as
     /// clearing the interner's storage.
+    ///
+    /// Note that this will not free the allocated memory.
     pub fn clear(&mut self) {
         self.before.clear();
         self.after.clear();
@@ -103,8 +105,13 @@ impl<T: Eq + Hash> InternedInput<T> {
         res
     }
 
-    /// Create an Interner with an intial capacity calculated by calling
-    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    /// Reserve capacity so that `before` and `after` would not need
+    /// to allocate if their [`estimate_tokens`](TokenSource::estimate_tokens)
+    /// would represent an exact match of their actual tokens.
+    ///
+    /// Useful for minimisation of allocation before calls to
+    /// [`update_before`](InternedInput::update_before) and
+    /// [`update_after`](InternedInput::update_after).
     pub fn reserve_for_token_source<S: TokenSource<Token = T> + ?Sized>(
         &mut self,
         before: &S,
@@ -129,7 +136,7 @@ impl<T: Eq + Hash> InternedInput<T> {
     /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
     /// a memory leak. If this function is called often over a long_running process
-    /// consider clearing the interner with [`clear`](crate::intern::Interner::clear).
+    /// consider clearing the interner with [`clear`](Interner::clear).
     pub fn update_before(&mut self, input: impl Iterator<Item = T>) {
         self.before.clear();
         self.before
@@ -139,8 +146,8 @@ impl<T: Eq + Hash> InternedInput<T> {
     /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
     /// a memory leak. If this function is called often over a long_running process
-    /// consider clearing the interner with [`clear`](crate::intern::Interner::clear) or
-    /// [`erase_tokens_after`](crate::intern::Interner::erase_tokens_after).
+    /// consider clearing the interner with [`clear`](Interner::clear) or
+    /// [`erase_tokens_after`](Interner::erase_tokens_after).
     pub fn update_after(&mut self, input: impl Iterator<Item = T>) {
         self.after.clear();
         self.after
@@ -158,7 +165,7 @@ pub struct Interner<T> {
 
 impl<T> Interner<T> {
     /// Create an Interner with an initial capacity calculated by summing the results of calling
-    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`.
+    /// [`estimate_tokens`](TokenSource::estimate_tokens) methods of `before` and `after`.
     pub fn new_for_token_source<S: TokenSource<Token = T>>(before: &S, after: &S) -> Self {
         Self::new(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
@@ -185,8 +192,8 @@ impl<T> Interner<T> {
 }
 
 impl<T: Hash + Eq> Interner<T> {
-    /// Create an Interner with an intial capacity calculated by calling
-    /// [`estimate_tokens`](crate::intern::TokenSource::estimate_tokens) methods of `before` and `after`
+    /// Create an Interner with an initial capacity calculated by calling
+    /// [`estimate_tokens`](TokenSource::estimate_tokens) methods of `before` and `after`
     pub fn reserve_for_token_source<S: TokenSource<Token = T>>(&mut self, before: &S, after: &S) {
         self.reserve(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
@@ -203,7 +210,7 @@ impl<T: Hash + Eq> Interner<T> {
         self.tokens.reserve(capacity);
     }
 
-    /// Intern `token` and return a the interned integer.
+    /// Intern `token` and return the interned integer.
     pub fn intern(&mut self, token: T) -> Token {
         let hash = self.hasher.hash_one(&token);
         match self.table.entry(
