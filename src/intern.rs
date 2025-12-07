@@ -109,7 +109,7 @@ impl<T: Eq + Hash> InternedInput<T> {
     /// to allocate if their [`estimate_tokens`](TokenSource::estimate_tokens)
     /// would represent an exact match of their actual tokens.
     ///
-    /// Useful for minimisation of allocation before calls to
+    /// Useful for minimization of allocation before calls to
     /// [`update_before`](InternedInput::update_before) and
     /// [`update_after`](InternedInput::update_after).
     pub fn reserve_for_token_source<S: TokenSource<Token = T> + ?Sized>(
@@ -135,7 +135,7 @@ impl<T: Eq + Hash> InternedInput<T> {
 
     /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
-    /// a memory leak. If this function is called often over a long_running process
+    /// a memory leak. If this function is called often over a long-running process
     /// consider clearing the interner with [`clear`](Interner::clear).
     pub fn update_before(&mut self, input: impl Iterator<Item = T>) {
         self.before.clear();
@@ -145,7 +145,7 @@ impl<T: Eq + Hash> InternedInput<T> {
 
     /// replaces `self.before` with the interned Tokens yielded by `input`
     /// Note that this does not erase any tokens from the interner and might therefore be considered
-    /// a memory leak. If this function is called often over a long_running process
+    /// a memory leak. If this function is called often over a long-running process
     /// consider clearing the interner with [`clear`](Interner::clear) or
     /// [`erase_tokens_after`](Interner::erase_tokens_after).
     pub fn update_after(&mut self, input: impl Iterator<Item = T>) {

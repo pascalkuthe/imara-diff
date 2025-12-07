@@ -96,7 +96,7 @@ impl Histogram {
                         &mut added[..lcs.after_start as usize],
                     );
 
-                    // this is equivalent to (tail) recursion but implement as a loop for efficeny reasons
+                    // this is equivalent to (tail) recursion but implement as a loop for efficiency reasons
                     let before_end = lcs.before_start + lcs.len;
                     before = &before[before_end as usize..];
                     removed = &mut removed[before_end as usize..];
@@ -108,7 +108,7 @@ impl Histogram {
                 None => {
                     // we are diffing two extremely large repetitive files
                     // this is a worst case for histogram diff with O(N^2) performance
-                    // fallback to myers to maintain linear time complxity
+                    // fallback to myers to maintain linear time complexity
                     myers::diff(before, after, removed, added, false);
                     return;
                 }
