@@ -119,13 +119,14 @@ impl IndentLevel {
     /// # Parameters
     ///
     /// * `src` - An iterator over the bytes of the line
-    /// * `tab_width` - The number of spaces that a tab character represents
+    /// * `tab_width` - The number of spaces that a tab character represents (min is 1)
     ///
     /// # Returns
     ///
     /// The computed indentation level, or `BLANK` if the line contains only whitespace
     pub fn for_ascii_line(src: impl IntoIterator<Item = u8>, tab_width: u8) -> IndentLevel {
         let mut indent_level = IndentLevel(0);
+        let tab_width = tab_width.max(1);
         for c in src {
             match c {
                 b' ' => indent_level.0 += 1,
