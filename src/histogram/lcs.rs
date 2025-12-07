@@ -1,6 +1,9 @@
 use crate::histogram::{Histogram, MAX_CHAIN_LEN};
 use crate::intern::Token;
 
+/// Finds the longest common subsequence (LCS) using a histogram-based approach.
+///
+/// Returns `None` if the sequences are highly repetitive and should fall back to Myers.
 pub(super) fn find_lcs(
     before: &[Token],
     after: &[Token],
@@ -19,16 +22,24 @@ pub(super) fn find_lcs(
     }
 }
 
+/// Represents a longest common subsequence found by the histogram algorithm.
 #[derive(Default, Debug)]
 pub struct Lcs {
+    /// Starting position in the "before" sequence.
     pub before_start: u32,
+    /// Starting position in the "after" sequence.
     pub after_start: u32,
+    /// Length of the common subsequence.
     pub len: u32,
 }
 
+/// State for searching for the longest common subsequence.
 pub struct LcsSearch {
+    /// The best LCS found so far.
     lcs: Lcs,
+    /// The minimum occurrence count of tokens in the best LCS.
     min_occurrences: u32,
+    /// Whether any common subsequence was found.
     found_cs: bool,
 }
 

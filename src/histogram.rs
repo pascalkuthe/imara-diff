@@ -6,13 +6,27 @@ use crate::myers;
 mod lcs;
 mod list_pool;
 
+/// Maximum number of occurrences tracked for a single token.
+/// Tokens appearing more frequently fall back to Myers algorithm.
 const MAX_CHAIN_LEN: u32 = 63;
 
+/// State for computing histogram-based diffs.
 struct Histogram {
+    /// Tracks where each token appears in the "before" sequence.
     token_occurrences: Vec<ListHandle>,
+    /// Memory pool for efficiently storing occurrence lists.
     pool: ListPool,
 }
 
+/// Computes a diff using the histogram algorithm.
+///
+/// # Parameters
+///
+/// * `before` - The token sequence from the first file
+/// * `after` - The token sequence from the second file
+/// * `removed` - Output array marking removed tokens
+/// * `added` - Output array marking added tokens
+/// * `num_tokens` - The total number of distinct tokens
 pub fn diff(
     before: &[Token],
     after: &[Token],

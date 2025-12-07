@@ -4,7 +4,23 @@ use std::ops::{Add, Range};
 
 use crate::intern::Token;
 
+/// A trait for heuristics that determine the best position for ambiguous diff hunks.
+///
+/// During postprocessing, some hunks can be moved up or down without changing the
+/// minimal nature of the diff. This trait allows customizing the logic for choosing
+/// the optimal position for such hunks.
 pub trait SliderHeuristic {
+    /// Determines the best ending position for a hunk that can be slid.
+    ///
+    /// # Parameters
+    ///
+    /// * `tokens` - The token sequence being diffed
+    /// * `hunk` - The range representing the current hunk position
+    /// * `earliest_end` - The earliest valid ending position for the hunk
+    ///
+    /// # Returns
+    ///
+    /// The preferred ending position for the hunk
     fn best_slider_end(&mut self, tokens: &[Token], hunk: Range<u32>, earliest_end: u32) -> u32;
 }
 
@@ -17,6 +33,10 @@ where
     }
 }
 
+/// A slider heuristic that doesn't adjust hunk positions.
+///
+/// This heuristic always places hunks at their lowest possible position without
+/// applying any additional logic.
 pub struct NoSliderHeuristic;
 
 impl SliderHeuristic for NoSliderHeuristic {
@@ -25,11 +45,22 @@ impl SliderHeuristic for NoSliderHeuristic {
     }
 }
 
+/// A slider heuristic that uses indentation levels to determine the best hunk position.
+///
+/// This heuristic analyzes the indentation of lines surrounding potential hunk positions
+/// and chooses the position that results in the most intuitive diff for human readers.
+/// It's particularly effective for code and other indented text.
 pub struct IndentHeuristic<IndentOfToken> {
+    /// A function that computes the indentation level for a given token.
     indent_of_token: IndentOfToken,
 }
 
 impl<IndentOfToken> IndentHeuristic<IndentOfToken> {
+    /// Creates a new `IndentHeuristic` with the given indentation function.
+    ///
+    /// # Parameters
+    ///
+    /// * `indent_of_token` - A function that takes a token and returns its indentation level
     pub fn new(indent_of_token: IndentOfToken) -> Self {
         Self { indent_of_token }
     }
@@ -38,8 +69,8 @@ impl<IndentOfToken> IndentHeuristic<IndentOfToken> {
 impl<IndentOfToken: Fn(Token) -> IndentLevel> SliderHeuristic for IndentHeuristic<IndentOfToken> {
     fn best_slider_end(&mut self, tokens: &[Token], hunk: Range<u32>, earliest_end: u32) -> u32 {
         const MAX_SLIDING: u32 = 100;
-        // this is a pure insertation that can be moved freely up and down
-        // to get more intutive results apply a heuristic
+        // This is a pure insertion that can be moved freely up and down.
+        // To get more intuitive results, apply a heuristic.
         let mut top_slider_end = earliest_end;
         // TODO: why is this needed
         if top_slider_end < hunk.start - 1 {
@@ -70,14 +101,29 @@ impl<IndentOfToken: Fn(Token) -> IndentLevel> SliderHeuristic for IndentHeuristi
     }
 }
 
+/// Represents the indentation level of a line.
+///
+/// Indentation is measured in spaces, with tabs expanded according to a configurable tab width.
+/// Special values are used to represent blank lines and maximum indentation.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd)]
 pub struct IndentLevel(u8);
 
 impl IndentLevel {
-    /// line is empty or only contains whitespaces (or EOF)
+    /// Represents a line that is empty or contains only whitespace (or EOF).
     const BLANK: IndentLevel = IndentLevel(u8::MAX);
+    /// The maximum trackable indentation level.
     const MAX: IndentLevel = IndentLevel(200);
 
+    /// Computes the indentation level for an ASCII line.
+    ///
+    /// # Parameters
+    ///
+    /// * `src` - An iterator over the bytes of the line
+    /// * `tab_width` - The number of spaces that a tab character represents
+    ///
+    /// # Returns
+    ///
+    /// The computed indentation level, or `BLANK` if the line contains only whitespace
     pub fn for_ascii_line(src: impl IntoIterator<Item = u8>, tab_width: u8) -> IndentLevel {
         let mut indent_level = IndentLevel(0);
         for c in src {
@@ -94,6 +140,16 @@ impl IndentLevel {
         IndentLevel::BLANK
     }
 
+    /// Computes the indentation level for a Unicode line.
+    ///
+    /// # Parameters
+    ///
+    /// * `src` - An iterator over the characters of the line
+    /// * `tab_width` - The number of spaces that a tab character represents
+    ///
+    /// # Returns
+    ///
+    /// The computed indentation level, or `BLANK` if the line contains only whitespace
     pub fn for_line(src: impl IntoIterator<Item = char>, tab_width: u8) -> IndentLevel {
         let mut indent_level = IndentLevel(0);
         for c in src {
@@ -127,20 +183,24 @@ impl IndentLevel {
     }
 }
 
+/// Captures indentation information for a token and its surrounding context.
+///
+/// This structure is used by the indent heuristic to evaluate different hunk positions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Indents {
-    /// indent level of the line/token
+    /// Indentation level of the current line/token.
     indent: IndentLevel,
-    /// indent level at the previous (non-blank) line
+    /// Indentation level of the previous non-blank line.
     prev_indent: IndentLevel,
-    /// indent level at the next (non-blank) line
+    /// Indentation level of the next non-blank line.
     next_indent: IndentLevel,
-    /// How many consecutive lines above the split are blank?
+    /// The number of consecutive blank lines above the current position.
     leading_blanks: u8,
-    /// How many lines after the line following the split are blank?
+    /// The number of blank lines after the line following the current position.
     trailing_blanks: u8,
 }
 
+/// Maximum number of consecutive blank lines to consider when computing indentation context.
 const MAX_BLANKS: usize = 20;
 
 impl Indents {
@@ -252,25 +312,42 @@ impl Indents {
     }
 }
 
+/// Penalty for placing a hunk at the start of a file.
 const START_OF_FILE_PENALTY: i32 = 1;
+/// Penalty for placing a hunk at the end of a file.
 const END_OF_FILE_PENALTY: i32 = 21;
+/// Weight applied to the total number of blank lines surrounding a hunk (negative means preferred).
 const TOTAL_BLANK_LINE_WEIGHT: i32 = -30;
+/// Additional weight for trailing blank lines.
 const TRAILING_BLANK_LINES_WEIGHT: i32 = 6;
 
+/// Penalty for placing a hunk where indentation increases (negative means preferred).
 const RELATIVE_INDENT_PENALTY: i32 = -4;
+/// Penalty for placing a hunk where indentation increases with blank lines present.
 const RELATIVE_INDENT_WITH_BLANK_PENALTY: i32 = 10;
 
+/// Penalty for placing a hunk where indentation decreases (outdent).
 const RELATIVE_OUTDENT_PENALTY: i32 = 24;
+/// Penalty for placing a hunk where indentation decreases with blank lines present.
 const RELATIVE_OUTDENT_WITH_BLANK_PENALTY: i32 = 17;
 
+/// Penalty for placing a hunk where indentation decreases but stays aligned (dedent).
 const RELATIVE_DEDENT_PENALTY: i32 = 23;
+/// Penalty for placing a hunk where indentation decreases but stays aligned with blank lines present.
 const RELATIVE_DEDENT_WITH_BLANK_PENALTY: i32 = 17;
 
+/// Weight factor for comparing indentation levels when scoring positions.
 const INDENT_WEIGHT: i32 = 60;
 
+/// A score for evaluating the quality of a hunk position.
+///
+/// Lower scores are better. The score considers both indentation level
+/// and various penalties based on the surrounding context.
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct Score {
+    /// The combined indentation level at the hunk boundaries.
     indent: i32,
+    /// The total penalty from various heuristics.
     penalty: i32,
 }
 
