@@ -15,7 +15,7 @@
 //! * The **Histogram** algorithm which is a variant of the patience diff algorithm.
 //!
 //! Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological
-//! cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
+//! cases to avoid quadratic time complexity and closely matches the behavior of gnu-diff and git.
 //! The Histogram algorithm was originally ported from git but has been heavily optimized.
 //! The **Histogram algorithm outperforms Myers diff** by 10% - 100% across a **wide variety of workloads**.
 //!
