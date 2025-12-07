@@ -88,3 +88,27 @@ jobs:
         run: cargo doc --no-deps --workspace --document-private-items
         env:
           RUSTDOCFLAGS: -D warnings
+
+  fuzz:
+    name: Fuzz Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Run fuzz tests
+        run: |
+          # Run each fuzz target for 45 seconds (total ~3 minutes for 4 targets)
+          for target in comprehensive_diff diff_compute_with postprocess_heuristics unified_diff_printer; do
+            cargo fuzz run $target -- -max_total_time=45 -runs=0
+          done

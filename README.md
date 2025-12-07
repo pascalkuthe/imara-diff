@@ -106,6 +106,9 @@ The sourcecode of the helix editor.
 <img src='plots/helix_comparison.svg' width="700">
 <img src='plots/helix_speedup.svg' width="700">
 
+## Testing
+
+`imara-diff` includes comprehensive fuzz testing using [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) to ensure robustness against arbitrary inputs. Fuzz tests cover all major algorithms (Myers, Histogram, MyersMinimal), postprocessing with different heuristics, and unified diff printing. See the [fuzz/README.md](fuzz/README.md) for more details on running fuzz tests locally.
 
 ## Stability Policy
 
