@@ -29,8 +29,8 @@ impl Diff {
     ///
     /// * `printer` - A printer implementation that controls how tokens are displayed
     /// * `config` - Configuration options for the unified diff format
-    /// * `before` - The token sequence from the first file
-    /// * `after` - The token sequence from the second file
+    /// * `before` - The token sequence from the first file, before changes.
+    /// * `after` - The token sequence from the second file, after changes.
     pub fn unified_diff_with<'a, P: UnifiedDiffPrinter>(
         &'a self,
         printer: &'a P,
@@ -213,9 +213,9 @@ pub struct UnifiedDiff<'a, P: UnifiedDiffPrinter> {
     diff: &'a Diff,
     /// Configuration for the unified diff format.
     config: UnifiedDiffConfig,
-    /// The token sequence from the first file.
+    /// The token sequence from the first file, before changes.
     before: &'a [Token],
-    /// The token sequence from the second file.
+    /// The token sequence from the second file, after changes.
     after: &'a [Token],
 }
 

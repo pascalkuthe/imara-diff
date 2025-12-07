@@ -273,6 +273,6 @@ pub enum SearchResult {
         /// Token index in the first sequence.
         token_idx1: i32,
         /// Token index in the second sequence.
-        token_idx2: i32
+        token_idx2: i32,
     },
 }

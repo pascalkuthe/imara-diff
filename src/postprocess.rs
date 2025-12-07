@@ -12,8 +12,8 @@ impl Diff {
     ///
     /// # Parameters
     ///
-    /// * `before` - The token sequence from the first file
-    /// * `after` - The token sequence from the second file
+    /// * `before` - The token sequence from the first file, before changes
+    /// * `after` - The token sequence from the second file, after changes
     /// * `heuristic` - The slider heuristic to use for positioning hunks
     pub fn postprocess_with(
         &mut self,
@@ -89,7 +89,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
             let mut is_modification;
             loop {
                 // move hunk up as far as possible to possibly merge it with other hunks
-                // and discover wether there are other possible positions
+                // and discover if there are other possible positions
                 while self.slide_up() {}
                 earliest_end = self.hunk.after.end;
                 is_modification = self.hunk.before.start != self.hunk.before.end;
@@ -113,7 +113,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
             if is_modification {
                 // hunk can be moved and there is a removed hunk in the same region
                 // move the hunk so it align with the other hunk to produce a single
-                // MODIFIED hunk instead of two seperate ADDED/REMOVED hunks
+                // MODIFIED hunk instead of two separate ADDED/REMOVED hunks
                 while self.hunk.before.start == self.hunk.before.end {
                     let success = self.slide_up();
                     debug_assert!(success);
