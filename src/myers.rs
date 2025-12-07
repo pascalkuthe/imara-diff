@@ -9,6 +9,15 @@ mod middle_snake;
 mod preprocess;
 mod slice;
 
+/// Computes a diff using the Myers algorithm.
+///
+/// # Parameters
+///
+/// * `before` - The token sequence from the first file
+/// * `after` - The token sequence from the second file
+/// * `removed` - Output array marking removed tokens
+/// * `added` - Output array marking added tokens
+/// * `minimal` - If true, disables heuristics to guarantee a minimal diff
 pub fn diff(
     before: &[Token],
     after: &[Token],
@@ -28,13 +37,23 @@ pub fn diff(
     );
 }
 
+/// Minimum edit cost before heuristics are applied to avoid quadratic behavior.
 const HEUR_MIN_COST: u32 = 256;
+/// Minimum value for the maximum cost threshold.
 const MAX_COST_MIN: u32 = 256;
 
+/// The Myers diff algorithm implementation with linear space complexity.
+///
+/// This structure maintains the internal state needed to compute diffs using
+/// Myers' algorithm with forward and backward search.
 pub struct Myers {
+    /// The backing memory for k-vectors.
     kvec: NonNull<[i32]>,
+    /// Pointer to the forward search k-vector.
     kforward: NonNull<i32>,
+    /// Pointer to the backward search k-vector.
     kbackward: NonNull<i32>,
+    /// Maximum edit cost before applying heuristics.
     max_cost: u32,
 }
 
@@ -217,11 +236,18 @@ impl Myers {
     }
 }
 
+/// Represents a split point in the divide-and-conquer approach.
+///
+/// The split divides the problem into two subproblems at the given token positions.
 #[derive(Debug)]
 struct Split {
+    /// Token index in the first sequence where the split occurs.
     token_idx1: i32,
+    /// Token index in the second sequence where the split occurs.
     token_idx2: i32,
+    /// Whether the lower subproblem was minimized.
     minimized_lo: bool,
+    /// Whether the upper subproblem was minimized.
     minimized_hi: bool,
 }
 

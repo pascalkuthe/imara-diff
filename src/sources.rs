@@ -1,3 +1,8 @@
+//! Utilities for creating token sources from common data types.
+//!
+//! This module provides implementations of [`TokenSource`] for
+//! strings and byte slices, splitting them into lines by default.
+
 use std::str::from_utf8_unchecked;
 
 use memchr::memchr;

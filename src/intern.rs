@@ -29,10 +29,22 @@ impl From<Token> for u32 {
     }
 }
 
+/// A trait for types that can be split into tokens for diffing.
+///
+/// Implementing this trait allows a type to be used with [`InternedInput`] to create
+/// interned token sequences for computing diffs. For example, `&str` implements this trait
+/// by default to split text into lines.
 pub trait TokenSource {
+    /// The type of token this source produces. Must be hashable and comparable for equality.
     type Token: Hash + Eq;
+    /// An iterator that yields tokens from this source.
     type Tokenizer: Iterator<Item = Self::Token>;
+    /// Creates an iterator that yields all tokens from this source.
     fn tokenize(&self) -> Self::Tokenizer;
+    /// Provides an estimate of the number of tokens this source will produce.
+    ///
+    /// This is used to pre-allocate memory for better performance. The estimate
+    /// does not need to be exact.
     fn estimate_tokens(&self) -> u32;
 }
 
@@ -47,12 +59,19 @@ pub trait TokenSource {
 /// While you can intern tokens yourself it is strongly recommended to use [`InternedInput`] module.
 #[derive(Default)]
 pub struct InternedInput<T> {
+    /// The list of interned tokens from the first sequence (before changes).
     pub before: Vec<Token>,
+    /// The list of interned tokens from the second sequence (after changes).
     pub after: Vec<Token>,
+    /// The interner that stores the actual token data and maps tokens to their interned IDs.
     pub interner: Interner<T>,
 }
 
 impl<T> InternedInput<T> {
+    /// Clears all token sequences and the interner.
+    ///
+    /// This removes all tokens from both the before and after sequences, as well as
+    /// clearing the interner's storage.
     pub fn clear(&mut self) {
         self.before.clear();
         self.after.clear();
@@ -61,6 +80,16 @@ impl<T> InternedInput<T> {
 }
 
 impl<T: Eq + Hash> InternedInput<T> {
+    /// Creates a new `InternedInput` by tokenizing and interning two token sources.
+    ///
+    /// # Parameters
+    ///
+    /// * `before` - The token source for the first sequence
+    /// * `after` - The token source for the second sequence
+    ///
+    /// # Returns
+    ///
+    /// An `InternedInput` containing interned token sequences ready for diffing
     pub fn new<I: TokenSource<Token = T>>(before: I, after: I) -> Self {
         let token_estimate_before = before.estimate_tokens() as usize;
         let token_estimate_after = after.estimate_tokens() as usize;
@@ -84,6 +113,12 @@ impl<T: Eq + Hash> InternedInput<T> {
         self.reserve(before.estimate_tokens(), after.estimate_tokens())
     }
 
+    /// Reserves capacity for the specified number of tokens in each sequence.
+    ///
+    /// # Parameters
+    ///
+    /// * `capacity_before` - The number of tokens to reserve for the "before" sequence
+    /// * `capacity_after` - The number of tokens to reserve for the "after" sequence
     pub fn reserve(&mut self, capacity_before: u32, capacity_after: u32) {
         self.before.reserve(capacity_before as usize);
         self.after.reserve(capacity_after as usize);
@@ -156,6 +191,11 @@ impl<T: Hash + Eq> Interner<T> {
         self.reserve(before.estimate_tokens() as usize + after.estimate_tokens() as usize)
     }
 
+    /// Reserves capacity for at least the specified number of additional tokens.
+    ///
+    /// # Parameters
+    ///
+    /// * `capacity` - The number of additional tokens to reserve space for
     pub fn reserve(&mut self, capacity: usize) {
         self.table.reserve(capacity, |&token| {
             self.hasher.hash_one(&self.tokens[token.0 as usize])
