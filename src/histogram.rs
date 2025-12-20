@@ -6,13 +6,27 @@ use crate::myers;
 mod lcs;
 mod list_pool;
 
+/// Maximum number of occurrences tracked for a single token.
+/// Tokens appearing more frequently fall back to Myers algorithm.
 const MAX_CHAIN_LEN: u32 = 63;
 
+/// State for computing histogram-based diffs.
 struct Histogram {
+    /// Tracks where each token appears in the "before" sequence.
     token_occurrences: Vec<ListHandle>,
+    /// Memory pool for efficiently storing occurrence lists.
     pool: ListPool,
 }
 
+/// Computes a diff using the histogram algorithm.
+///
+/// # Parameters
+///
+/// * `before` - The token sequence from the first file, before changes.
+/// * `after` - The token sequence from the second file, after changes.
+/// * `removed` - Output array marking removed tokens
+/// * `added` - Output array marking added tokens
+/// * `num_tokens` - The total number of distinct tokens
 pub fn diff(
     before: &[Token],
     after: &[Token],
@@ -82,7 +96,7 @@ impl Histogram {
                         &mut added[..lcs.after_start as usize],
                     );
 
-                    // this is equivalent to (tail) recursion but implement as a loop for efficeny reasons
+                    // this is equivalent to (tail) recursion but implement as a loop for efficiency reasons
                     let before_end = lcs.before_start + lcs.len;
                     before = &before[before_end as usize..];
                     removed = &mut removed[before_end as usize..];
@@ -94,7 +108,7 @@ impl Histogram {
                 None => {
                     // we are diffing two extremely large repetitive files
                     // this is a worst case for histogram diff with O(N^2) performance
-                    // fallback to myers to maintain linear time complxity
+                    // fallback to myers to maintain linear time complexity
                     myers::diff(before, after, removed, added, false);
                     return;
                 }

@@ -1,15 +1,19 @@
 use crate::intern::Token;
 use crate::myers::sqrt;
 
+/// Preprocesses token sequences by removing tokens that don't appear in the other sequence.
+///
+/// This optimization reduces the problem size for the Myers algorithm, improving performance
+/// for files with many unique tokens.
 pub fn preprocess<'a>(
     before: &[Token],
     after: &[Token],
     removed: &'a mut [bool],
     added: &'a mut [bool],
 ) -> (PreprocessedFile, PreprocessedFile) {
-    let (occurances_before, occurances_after) = token_occurrences(before, after);
-    let file1 = PreprocessedFile::new(&occurances_before, before, removed);
-    let file2 = PreprocessedFile::new(&occurances_after, after, added);
+    let (occurrences_before, occurrences_after) = token_occurrences(before, after);
+    let file1 = PreprocessedFile::new(&occurrences_before, before, removed);
+    let file2 = PreprocessedFile::new(&occurrences_after, after, added);
     (file1, file2)
 }
 
@@ -57,14 +61,15 @@ fn token_occurrences(file1: &[Token], file2: &[Token]) -> (Vec<Occurrences>, Vec
     (token_occurrences1, token_occurrences2)
 }
 
+/// Categorizes how frequently a token appears in a file.
 #[derive(Clone, Copy, Debug)]
 enum Occurrences {
-    /// Token does not occur in this file
+    /// Token does not occur in the other file.
     None,
-    /// Token occurs at least once
+    /// Token occurs at least once in the other file.
     Some,
-    /// Token occurs very frequently (exact number depends on file size).
-    /// Such tokens are usually empty lines or braces and are often not meaningful to a diff
+    /// Token occurs very frequently in the other file (exact threshold depends on file size).
+    /// Such tokens are usually empty lines or braces and are often not meaningful to a diff.
     Common,
 }
 
@@ -80,9 +85,12 @@ impl Occurrences {
     }
 }
 
+/// A file after preprocessing has removed unmatched tokens.
 #[derive(Debug)]
 pub struct PreprocessedFile {
+    /// Maps from new token positions to original positions in the unpreprocessed file.
     pub indices: Vec<u32>,
+    /// The tokens that remain after preprocessing.
     pub tokens: Vec<Token>,
 }
 

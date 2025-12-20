@@ -3,15 +3,26 @@ use std::ptr::NonNull;
 use crate::myers::slice::FileSlice;
 use crate::util::{common_postfix, common_prefix};
 
+/// Minimum snake length to be considered a "good" snake for heuristics.
 const SNAKE_CNT: u32 = 20;
+/// Heuristic multiplier used to evaluate snake quality.
 const K_HEUR: u32 = 4;
 
+/// Performs forward or backward search for the middle snake in Myers' algorithm.
+///
+/// The `BACK` const generic parameter determines the search direction:
+/// `false` for forward search, `true` for backward search.
 #[derive(Debug)]
 pub struct MiddleSnakeSearch<const BACK: bool> {
+    /// Pointer to the k-vector storage for this search direction.
     kvec: NonNull<i32>,
+    /// Minimum k-diagonal currently being searched.
     kmin: i32,
+    /// Maximum k-diagonal currently being searched.
     kmax: i32,
+    /// Minimum possible k-diagonal value.
     dmin: i32,
+    /// Maximum possible k-diagonal value.
     dmax: i32,
 }
 
@@ -252,8 +263,16 @@ impl<const BACK: bool> MiddleSnakeSearch<BACK> {
     }
 }
 
+/// The result of a middle snake search iteration.
 #[derive(Debug)]
 pub enum SearchResult {
+    /// A good snake was found but not necessarily the middle snake.
     Snake,
-    Found { token_idx1: i32, token_idx2: i32 },
+    /// The middle snake was found at the specified token positions.
+    Found {
+        /// Token index in the first sequence.
+        token_idx1: i32,
+        /// Token index in the second sequence.
+        token_idx2: i32,
+    },
 }

@@ -1,6 +1,7 @@
-//! Imara-diff is a solid (imara in swahili) diff library for rust.
+#![deny(missing_docs)]
+//! Imara-diff is a solid (imara in Swahili) diff library for Rust.
 //! Solid refers to the fact that imara-diff provides very good runtime performance even
-//! in pathologic cases so that your application never appears to freeze while waiting on a diff.
+//! in pathological cases so that your application never appears to freeze while waiting on a diff.
 //! The performance improvements are achieved using battle tested heuristics used in gnu-diff and git
 //! that are known to yield fast runtime and performance.
 //!
@@ -14,27 +15,27 @@
 //! * The **Histogram** algorithm which is a variant of the patience diff algorithm.
 //!
 //! Myers algorithm has been enhanced with preprocessing and multiple heuristics to ensure fast runtime in pathological
-//! cases to avoid quadratic time complexity and closely matches the behaviour of gnu-diff and git.
+//! cases to avoid quadratic time complexity and closely matches the behavior of gnu-diff and git.
 //! The Histogram algorithm was originally ported from git but has been heavily optimized.
 //! The **Histogram algorithm outperforms Myers diff** by 10% - 100% across a **wide variety of workloads**.
 //!
 //! Imara-diffs algorithms have been benchmarked over a wide variety of real-world code.
-//! For example while comparing multiple different linux kernel it performs up to 30 times better than the `similar` crate:
+//! For example, while comparing multiple different Linux kernel versions, it performs up to 30 times better than the `similar` crate:
 #![cfg_attr(doc, doc=concat!("<img width=\"600\" class=\"figure\" src=\"data:image/svg+xml;base64,", include_str!("../plots/linux_comparison.svg.base64"), "\"></img>"))]
 //!
 //! # API Overview
 //!
 //! ## Preparing the input
-//! To compute an input sequence is required. `imara-diff` computes diffs on abstract
-//! sequences represented as a slice of ids/tokens: [`Token`](crate::Token). To create
-//! such a sequence from your input type (for example text) the input needs to be interned.
-//! For that `imara-diff` provides utilities in the form of `InternedInput` struct and
-//! `TokenSource` trait to construct it. The [`InternedInput`] contains the two sides of
+//! To compute a diff, an input sequence is required. `imara-diff` computes diffs on abstract
+//! sequences represented as a slice of IDs/tokens: [`Token`]. To create
+//! such a sequence from your input type (for example, text), the input needs to be interned.
+//! For that `imara-diff` provides utilities in the form of the [`InternedInput`] struct and
+//! the `TokenSource` trait to construct it. [`InternedInput`] contains the two sides of
 //! the diff (used while computing the diff). As well as the interner that allows mapping
 //! back tokens to their original data.
 //!
-//! The most common usecase for diff is comparing text. `&str` implements `TokenSource`
-//! by default segment the text into lines. So creating an input for a text-based diff usually
+//! The most common use case for diff is comparing text. `&str` implements `TokenSource`
+//! by default to segment the text into lines. So creating an input for a text-based diff usually
 //! looks something like the following:
 //!
 //! ```
@@ -46,7 +47,7 @@
 //! assert_eq!(input.interner[input.before[0]], "abc\n");
 //! ```
 //!
-//! Note that interning inputs is optional and you could choose a different strategy
+//! Note that interning inputs is optional, and you could choose a different strategy
 //! for creating a sequence of tokens. Instead of using the [`Diff::compute`] function,
 //! [`Diff::compute_with`] can be used to provide a list of tokens directly, entirely
 //! bypassing the interning step.
@@ -54,15 +55,18 @@
 //! ## Computing the Diff
 //!
 //! A diff of two sequences is represented by the [`Diff`] struct and computed by
-//! [`Diff::compute`] / [`Diff::compute_with`]. Here also an algorithm can be chosen.
-//! In most situations [`Algorithm::Histogram`] is a good choice, refer to the docs
-//! of [`Algorithm`] for more details. After the initial computation the diff can be
-//! postprocessed. If the diff is shown to a human you in some way (even indirectly) you
-//! always want to use this. However, when only counting the number of changed tokens
-//! quickly this can be skipped. The postprocessing allows you to provide your own
-//! heuristic for selecting a slider position. An indentation-based heuristic is provided
-//! which is a good fit for all text-based line-diffs. The internals of the heuristic are
-//! public so a tweaked heuristic can be built on top.
+//! [`Diff::compute`] / [`Diff::compute_with`]. An algorithm can also be chosen here.
+//! In most situations, [`Algorithm::Histogram`] is a good choice; refer to the docs
+//! of [`Algorithm`] for more details.
+//!
+//! After the initial computation, the diff can be *postprocessed*. If the diff is shown
+//! to a human in some way (even indirectly), you always want to use this.
+//!
+//! However, when only counting the number of changed tokens quickly, this can be skipped.
+//! The postprocessing allows you to provide your own
+//! heuristic for selecting a slider position. An indentation-based heuristic is provided,
+//! which is a good fit for all text-based line diffs. The internals of the heuristic are
+//! public, so a tweaked heuristic can be built on top.
 //!
 //! ```
 //! # use imara_diff::{InternedInput, Diff, Algorithm};
@@ -78,20 +82,20 @@
 //!
 //! ## Accessing results
 //!
-//! [`Diff`] allows to query whether a particular position was removed/added on either
+//! [`Diff`] allows querying whether a particular position was removed/added on either
 //! side of the diff with [`Diff::is_removed`] / [`Diff::is_added`]. The number
 //! of additions/removals can be quickly counted with [`Diff::count_removals`] /
 //! [`Diff::count_additions`]. The most powerful/useful interface is the hunk iterator
-//! [`Diff::hunks`] which will return a list of additions/removals/modifications in the
+//! [`Diff::hunks`], which returns a list of additions/removals/modifications in the
 //! order that they appear in the input.
 //!
-//! Finally if the `unified_diff` feature is enabled a diff can be printed with
+//! Finally, if the `unified_diff` feature is enabled, a diff can be printed with
 //! [`Diff::unified_diff`] to print a unified diff/patch as shown by `git diff` or `diff
-//! -u`. Note that while the unified diff has a decent amount of flexibility it is fairly
+//! -u`. Note that while the unified diff has a decent amount of flexibility, it is fairly
 //! simplistic and not every formatting may be possible. It's meant to cover common
-//! situations but not cover every advanced usecase. Instead if you need more advanced
-//! printing built your own printer on top of the `Diff::hunks` iterator, for that you can
-//! take inspiration from the builtin printer.
+//! situations but not cover every advanced use case. Instead, if you need more advanced
+//! printing, build your own printer on top of the [`Diff::hunks`] iterator; for that, you can
+//! take inspiration from the built-in printer.
 //!
 //! ```
 //! # use imara_diff::{InternedInput, Diff, Algorithm, BasicLineDiffPrinter, UnifiedDiffConfig};
@@ -174,28 +178,28 @@ pub enum Algorithm {
     /// A variation of the [`patience` diff algorithm described by Bram Cohen's blog post](https://bramcohen.livejournal.com/73318.html)
     /// that uses a histogram to find the least common LCS.
     /// Just like the `patience` diff algorithm, this algorithm usually produces
-    /// more human readable output then myers algorithm.
-    /// However compared to the `patience` diff algorithm (which is slower then myers algorithm),
+    /// more human-readable output than Myers algorithm.
+    /// However, compared to the `patience` diff algorithm (which is slower than Myers algorithm),
     /// the Histogram algorithm performs much better.
     ///
     /// The implementation here was originally ported from `git` but has been significantly
     /// modified to improve performance.
-    /// As a result it consistently **performs better then myers algorithm** (5%-100%) over
-    /// a wide variety of test data. For example a benchmark of diffing linux kernel commits is shown below:
+    /// As a result, it consistently **performs better than Myers algorithm** (5%-100%) over
+    /// a wide variety of test data. For example, a benchmark of diffing Linux kernel commits is shown below:
     #[cfg_attr(doc, doc=concat!("<img width=\"600\" class=\"figure\" src=\"data:image/svg+xml;base64,", include_str!("../plots/linux_speedup.svg.base64"), "\"></img>"))]
     ///
     /// For pathological subsequences that only contain highly repeating tokens (64+ occurrences)
     /// the algorithm falls back on Myers algorithm (with heuristics) to avoid quadratic behavior.
     ///
     /// Compared to Myers algorithm, the Histogram diff algorithm is more focused on providing
-    /// human readable diffs instead of minimal diffs. In practice this means that the edit-sequences
-    /// produced by the histogram diff are often longer then those produced by Myers algorithm.
+    /// human-readable diffs instead of minimal diffs. In practice, this means that the edit sequences
+    /// produced by the histogram diff are often longer than those produced by Myers algorithm.
     ///
     /// The heuristic used by the histogram diff does not work well for inputs with small (often repeated)
-    /// tokens. For example **character diffs do not work well** as most (english) text is made up of
-    /// a fairly small set of characters. The `Histogram` algorithm will automatically these cases and
-    /// fallback to Myers algorithm. However this detection has a nontrivial overhead, so
-    /// if its known upfront that the sort of tokens is very small `Myers` algorithm should
+    /// tokens. For example, **character diffs do not work well** as most (English) text is made up of
+    /// a fairly small set of characters. The `Histogram` algorithm will automatically detect these cases and
+    /// fall back to Myers algorithm. However, this detection has a nontrivial overhead, so
+    /// if it's known upfront that the sort of tokens is very small, `Myers` algorithm should
     /// be used instead.
     #[default]
     Histogram,
@@ -203,20 +207,20 @@ pub enum Algorithm {
     /// [Myers  `O((N+M)D)` algorithm](http://www.xmailserver.org/diff2.pdf).
     /// The algorithm is enhanced with preprocessing that removes
     /// tokens that don't occur in the other file at all.
-    /// Furthermore two heuristics to the middle snake search are implemented
+    /// Furthermore, two heuristics for the middle snake search are implemented
     /// that ensure reasonable runtime (mostly linear time complexity) even for large files.
     ///
-    /// Due to the divide and conquer nature of the algorithm
-    /// the edit sequenced produced are still fairly small even when the middle snake
+    /// Due to the divide-and-conquer nature of the algorithm,
+    /// the edit sequences produced are still fairly small even when the middle snake
     /// search is aborted by a heuristic.
     /// However, the produced edit sequences are not guaranteed to be fully minimal.
     /// If that property is vital to you, use the `MyersMinimal` algorithm instead.
     ///
-    /// The implementation (including the preprocessing) are mostly
-    /// ported from `git` and `gnu-diff` where Myers algorithm is used
+    /// The implementation (including the preprocessing) is mostly
+    /// ported from `git` and `gnu-diff`, where Myers algorithm is used
     /// as the default diff algorithm.
-    /// Therefore the used heuristics have been heavily battle tested and
-    /// are known to behave well over a large variety of inputs
+    /// Therefore, the used heuristics have been heavily battle-tested and
+    /// are known to behave well over a large variety of inputs.
     Myers,
     /// Same as `Myers` but the early abort heuristics are disabled to guarantee
     /// a minimal edit sequence.
@@ -229,9 +233,16 @@ impl Algorithm {
     const ALL: [Self; 2] = [Algorithm::Histogram, Algorithm::Myers];
 }
 
+/// Represents the difference between two sequences of tokens.
+///
+/// A `Diff` stores which tokens were removed from the first sequence and which tokens were added to the second sequence.
 #[derive(Default)]
 pub struct Diff {
+    /// Tracks which tokens were removed from the first sequence (`before`), with
+    /// one entry for each one in the `before` sequence.
     removed: Vec<bool>,
+    /// Tracks which tokens were added to the second sequence (`after`), with
+    /// one entry for each one in the `after` sequence.
     added: Vec<bool>,
 }
 
@@ -291,46 +302,58 @@ impl Diff {
         }
     }
 
+    /// Returns the total number of tokens that were added in the second sequence.
     pub fn count_additions(&self) -> u32 {
         self.added.iter().map(|&added| added as u32).sum()
     }
 
+    /// Returns the total number of tokens that were removed from the first sequence (`before`).
     pub fn count_removals(&self) -> u32 {
         self.removed.iter().map(|&removed| removed as u32).sum()
     }
 
+    /// Returns `true` if the token at the given index was removed from the first sequence (`before`).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `token_idx` is out of bounds for the first sequence.
     pub fn is_removed(&self, token_idx: u32) -> bool {
         self.removed[token_idx as usize]
     }
 
+    /// Returns `true` if the token at the given index was added to the second sequence (`after`).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `token_idx` is out of bounds for the second sequence (`after`).
     pub fn is_added(&self, token_idx: u32) -> bool {
         self.added[token_idx as usize]
     }
 
-    /// Postprocesses the diff to make it more human readable. Certain bvhunks
+    /// Postprocesses the diff to make it more human-readable. Certain hunks
     /// have an ambiguous placement (even in a minimal diff) where they can move
     /// downward or upward by removing a token (line) at the start and adding
-    /// one at the end (or the other way around). The postprocessing adjust
-    /// these hunks according to a couple rules:
+    /// one at the end (or the other way around). The postprocessing adjusts
+    /// these hunks according to a couple of rules:
     ///
     /// * Always merge multiple hunks if possible.
     /// * Always try to create a single MODIFY hunk instead of multiple disjoint
-    ///   ADDED/REMOVED hunks
+    ///   ADDED/REMOVED hunks.
     /// * Move sliders as far down as possible.
     pub fn postprocess_no_heuristic<T>(&mut self, input: &InternedInput<T>) {
         self.postprocess_with_heuristic(input, NoSliderHeuristic)
     }
 
-    /// Postprocesses the diff to make it more human readable. Certain bvhunks
+    /// Postprocesses the diff to make it more human-readable. Certain hunks
     /// have an ambiguous placement (even in a minimal diff) where they can move
     /// downward or upward by removing a token (line) at the start and adding
-    /// one at the end (or the other way around). The postprocessing adjust
-    /// these hunks according to a couple rules:
+    /// one at the end (or the other way around). The postprocessing adjusts
+    /// these hunks according to a couple of rules:
     ///
     /// * Always merge multiple hunks if possible.
     /// * Always try to create a single MODIFY hunk instead of multiple disjoint
-    ///   ADDED/REMOVED hunks
-    /// * based on a lines indentation level heuristically compute the most
+    ///   ADDED/REMOVED hunks.
+    /// * Based on a line's indentation level, heuristically compute the most
     ///   intuitive location to split lines.
     /// * Move sliders as far down as possible.
     pub fn postprocess_lines<T: AsRef<[u8]>>(&mut self, input: &InternedInput<T>) {
@@ -342,7 +365,7 @@ impl Diff {
         )
     }
 
-    /// An iterator that yields the changed hunks in this diff
+    /// Return an iterator that yields the changed hunks in this diff.
     pub fn hunks(&self) -> HunkIter<'_> {
         HunkIter {
             removed: self.removed.iter(),
@@ -357,18 +380,22 @@ impl Diff {
 /// in the first sequence that were replaced by a different range of tokens
 /// in the second sequence (`after`).
 ///
-/// Tokens that are a
+/// Each hunk identifies a contiguous region of change, where tokens from the `before` range
+/// should be replaced with tokens from the `after` range.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct Hunk {
+    /// The range of token indices in the first sequence (`before`) that were removed.
     pub before: Range<u32>,
+    /// The range of token indices in the second sequence (`after`) that were added.
     pub after: Range<u32>,
 }
 
 impl Hunk {
     /// Can be used instead of `Option::None` for better performance.
-    /// Because `imara-diff` does not support more then `i32::MAX` there is an unused bit pattern that can be used.
-    /// Has some nice properties where it usually is not necessary to check for `None` separately:
-    /// Empty ranges fail contains checks and also fail smaller then checks.
+    /// Because `imara-diff` does not support more than `i32::MAX` there is an unused bit pattern that can be used.
+    ///
+    /// It has some nice properties where it usually is not necessary to check for `None` separately:
+    /// Empty ranges fail contains checks and also fail smaller than checks.
     pub const NONE: Hunk = Hunk {
         before: u32::MAX..u32::MAX,
         after: u32::MAX..u32::MAX,

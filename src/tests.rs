@@ -167,7 +167,7 @@ fn myers_is_even() {
 
     cov_mark::check!(EVEN_SPLIT);
     // if the check for is_odd incorrectly always true then we take a fastpath
-    // when we shouldn't which always leads to inifite iterations/recursion
+    // when we shouldn't, which always leads to infinite iterations/recursion
     // still we check the number of iterations here in case the search
     // is buggy in more subtle ways
     cov_mark::check_count!(SPLIT_SEARCH_ITER, 15);
@@ -474,7 +474,7 @@ pub fn project_root() -> PathBuf {
 
 #[test]
 #[cfg(not(miri))]
-fn hand_checked_udiffs() {
+fn hand_checked_unidiffs() {
     for algorithm in Algorithm::ALL {
         println!("{algorithm:?}");
         let test_dir = project_root().join("tests");

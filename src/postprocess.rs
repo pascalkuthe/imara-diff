@@ -4,6 +4,17 @@ use crate::util::{find_hunk_end, find_hunk_start};
 use crate::{Diff, Hunk};
 
 impl Diff {
+    /// Postprocesses the diff using explicit token sequences and a custom heuristic.
+    ///
+    /// This is a lower-level method that works directly with token sequences rather than
+    /// an `InternedInput`. Use [`postprocess_with_heuristic`](Self::postprocess_with_heuristic)
+    /// for a more convenient API.
+    ///
+    /// # Parameters
+    ///
+    /// * `before` - The token sequence from the first file, before changes
+    /// * `after` - The token sequence from the second file, after changes
+    /// * `heuristic` - The slider heuristic to use for positioning hunks
     pub fn postprocess_with(
         &mut self,
         before: &[Token],
@@ -34,6 +45,15 @@ impl Diff {
         .run()
     }
 
+    /// Postprocesses the diff using an `InternedInput` and a custom heuristic.
+    ///
+    /// This is a convenience wrapper around [`postprocess_with`](Self::postprocess_with)
+    /// that extracts the token sequences from the input automatically.
+    ///
+    /// # Parameters
+    ///
+    /// * `input` - The interned input containing the token sequences
+    /// * `heuristic` - The slider heuristic to use for positioning hunks
     pub fn postprocess_with_heuristic<T>(
         &mut self,
         input: &InternedInput<T>,
@@ -43,12 +63,17 @@ impl Diff {
     }
 }
 
+/// Internal state for postprocessing a diff to improve readability.
 struct Postprocessor<'a, H> {
+    /// The mutable array tracking which tokens were added.
     added: &'a mut [bool],
+    /// The immutable array tracking which tokens were removed.
     removed: &'a [bool],
+    /// The token sequence being processed.
     tokens: &'a [Token],
-    // the current hunk in the iteration
+    /// The current hunk being processed in the iteration.
     hunk: Hunk,
+    /// The heuristic used to determine optimal hunk positions.
     heuristic: &'a mut H,
 }
 
@@ -64,7 +89,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
             let mut is_modification;
             loop {
                 // move hunk up as far as possible to possibly merge it with other hunks
-                // and discover wether there are other possible positions
+                // and discover if there are other possible positions
                 while self.slide_up() {}
                 earliest_end = self.hunk.after.end;
                 is_modification = self.hunk.before.start != self.hunk.before.end;
@@ -88,7 +113,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
             if is_modification {
                 // hunk can be moved and there is a removed hunk in the same region
                 // move the hunk so it align with the other hunk to produce a single
-                // MODIFIED hunk instead of two seperate ADDED/REMOVED hunks
+                // MODIFIED hunk instead of two separate ADDED/REMOVED hunks
                 while self.hunk.before.start == self.hunk.before.end {
                     let success = self.slide_up();
                     debug_assert!(success);
@@ -107,7 +132,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
         }
     }
 
-    /// slide up a hunk by one token/line, potenitally merging it with a subsequent hunk
+    /// Slides a hunk down by one token/line, potentially merging it with a subsequent hunk.
     fn slide_down(&mut self) -> bool {
         let Some(&next_token) = self.tokens.get(self.hunk.after.end as usize) else {
             return false;
@@ -125,7 +150,7 @@ impl<H: SliderHeuristic> Postprocessor<'_, H> {
         true
     }
 
-    /// slide up a hunk by one token/line, potenitally merging it with a previous hunk
+    /// Slides a hunk up by one token/line, potentially merging it with a previous hunk.
     fn slide_up(&mut self) -> bool {
         if self.hunk.after.start == 0 {
             return false;
