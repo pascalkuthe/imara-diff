@@ -420,7 +420,42 @@ impl Hunk {
         self.after.is_empty()
     }
 
-    /// Performs a word-diff of the hunk
+    /// Performs a word-diff of the hunk.
+    /// 
+    /// This requires passing the original [`InternedInput`] in order to look up
+    /// the tokens of the current hunk. Each token is split into words using the
+    /// built-in [`words`] tokenizer. The resulting word tokens are stored in a
+    /// second [`InternedInput`], and a [`Diff`] is computed on them.
+    /// 
+    /// For performance reasons, this second [`InternedInput`] as well as the
+    /// computed [`Diff`] need to be passed as parameters so that they can be
+    /// re-used when iterating over hunks. Note that word tokens are always
+    /// added but never removed from the interner. Consider clearing it every
+    /// `n` iterations if you expect your input to have a large vocabulary.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use imara_diff::{InternedInput, Diff, Algorithm};
+    /// // Compute diff normally
+    /// let before = "before text";
+    /// let after = "after text";
+    /// let mut input = InternedInput::new(before, after);
+    /// let mut diff = Diff::compute(Algorithm::Histogram, &input);
+    /// diff.postprocess_lines(&input);
+    /// 
+    /// // Compute word-diff per hunk, reusing allocations across iterations
+    /// let mut hunk_diff_input = InternedInput::default();
+    /// let mut hunk_diff = Diff::default();
+    /// for hunk in diff.hunks() {
+    ///   hunk.word_diff(&input, &mut hunk_diff_input, &mut hunk_diff);
+    ///   let added = hunk_diff.count_additions();
+    ///   let removed = hunk_diff.count_removals();
+    ///   println!("word-diff of this hunk has {added} additions and {removed} removals");
+    ///   // optionally, clear the interner:
+    ///   hunk_diff_input.clear();
+    /// }
+    /// ```
     pub fn word_diff<'a>(
         &self,
         input: &InternedInput<&'a str>,
