@@ -163,12 +163,11 @@ mod myers;
 mod postprocess;
 mod slider_heuristic;
 pub mod sources;
+#[cfg(test)]
+mod tests;
 #[cfg(feature = "unified_diff")]
 mod unified_diff;
 mod util;
-
-#[cfg(test)]
-mod tests;
 
 /// `imara-diff` supports multiple different algorithms
 /// for computing an edit sequence.
@@ -226,11 +225,6 @@ pub enum Algorithm {
     /// a minimal edit sequence.
     /// This can mean significant slowdown in pathological cases.
     MyersMinimal,
-}
-
-impl Algorithm {
-    #[cfg(test)]
-    const ALL: [Self; 2] = [Algorithm::Histogram, Algorithm::Myers];
 }
 
 /// Represents the difference between two sequences of tokens.
