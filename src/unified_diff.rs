@@ -222,22 +222,17 @@ pub struct UnifiedDiff<'a, P: UnifiedDiffPrinter> {
 impl<P: UnifiedDiffPrinter> Display for UnifiedDiff<'_, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let first_hunk = self.diff.hunks().next().unwrap_or_default();
-        let mut pos = first_hunk
-            .before
-            .start
-            .saturating_sub(self.config.context_len);
+        let context_len = self.config.context_len.min(1024 * 1024);
+        let mut pos = first_hunk.before.start.saturating_sub(context_len);
         let mut before_context_start = pos;
-        let mut after_context_start = first_hunk
-            .after
-            .start
-            .saturating_sub(self.config.context_len);
+        let mut after_context_start = first_hunk.after.start.saturating_sub(context_len);
         let mut before_context_len = 0;
         let mut after_context_len = 0;
         let mut buffer = String::new();
         for hunk in self.diff.hunks() {
-            if hunk.before.start - pos > 2 * self.config.context_len {
+            if hunk.before.start - pos > 2 * context_len {
                 if !buffer.is_empty() {
-                    let end = (pos + self.config.context_len).min(self.before.len() as u32);
+                    let end = (pos + context_len).min(self.before.len() as u32);
                     self.printer.display_header(
                         &mut *f,
                         before_context_start,
@@ -251,9 +246,9 @@ impl<P: UnifiedDiffPrinter> Display for UnifiedDiff<'_, P> {
                     }
                     buffer.clear();
                 }
-                pos = hunk.before.start - self.config.context_len;
+                pos = hunk.before.start - context_len;
                 before_context_start = pos;
-                after_context_start = hunk.after.start - self.config.context_len;
+                after_context_start = hunk.after.start - context_len;
                 before_context_len = 0;
                 after_context_len = 0;
             }
@@ -271,7 +266,7 @@ impl<P: UnifiedDiffPrinter> Display for UnifiedDiff<'_, P> {
             pos = hunk.before.end;
         }
         if !buffer.is_empty() {
-            let end = (pos + self.config.context_len).min(self.before.len() as u32);
+            let end = (pos + context_len).min(self.before.len() as u32);
             self.printer.display_header(
                 &mut *f,
                 before_context_start,
