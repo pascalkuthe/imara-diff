@@ -331,132 +331,134 @@ i
     }
 }
 
-#[test]
-fn hunk_word_diff_pure() {
-    let before = r#"fn foo() -> Bar{
+mod latin_word_diff {
+    use crate::sources::words;
+    use crate::{Algorithm, Diff, InternedInput};
+    use std::mem::swap;
+
+    #[test]
+    fn pure() {
+        let before = r#"fn foo() -> Bar{
     let mut foo = 2.0;
     foo *= 100 / 2;
 }"#;
-    let after = r#"fn foo() -> Bar{
+        let after = r#"fn foo() -> Bar{
     let mut foo = 2.0;
     foo *= 100 / 2;
     println("hello world")
 }"#;
-    let mut input = InternedInput::new(before, after);
-    for algorithm in Algorithm::ALL {
-        let mut diff_input = InternedInput::default();
-        let mut d = Diff::default();
+        let mut input = InternedInput::new(before, after);
+        for algorithm in Algorithm::ALL {
+            let mut diff_input = InternedInput::default();
+            let mut d = Diff::default();
 
-        println!("{algorithm:?}");
+            let mut diff = Diff::compute(algorithm, &input);
+            diff.postprocess_lines(&input);
 
-        let mut diff = Diff::compute(algorithm, &input);
-        diff.postprocess_lines(&input);
+            let mut hunks = diff.hunks();
+            let hunk = hunks.next().expect("missing first hunk");
+            hunk.latin_word_diff(&input, &mut diff_input, &mut d);
+            let mut h = d.hunks();
+            let first = h.next().expect("missing first inner hunk");
+            assert!(first.is_pure_insertion());
+            assert_eq!(first.before, 0..0);
+            assert_eq!(
+                first.after,
+                0..words("    println(\"hello world\")\n").count() as u32
+            );
+            assert_eq!(h.next(), None);
+            assert_eq!(hunks.next(), None);
 
-        let mut hunks = diff.hunks();
-        let hunk = hunks.next().expect("missing first hunk");
-        hunk.word_diff(&input, &mut diff_input, &mut d);
-        let mut h = d.hunks();
-        let first = h.next().expect("missing first inner hunk");
-        assert!(first.is_pure_insertion());
-        assert_eq!(first.before, 0..0);
-        assert_eq!(
-            first.after,
-            0..words("    println(\"hello world\")\n").count() as u32
-        );
-        assert_eq!(h.next(), None);
-        assert_eq!(hunks.next(), None);
+            swap(&mut input.before, &mut input.after);
 
-        swap(&mut input.before, &mut input.after);
+            let mut diff = Diff::compute(algorithm, &input);
+            diff.postprocess_lines(&input);
 
-        let mut diff = Diff::compute(algorithm, &input);
-        diff.postprocess_lines(&input);
+            let mut hunks = diff.hunks();
+            let hunk = hunks.next().expect("missing first hunk");
+            hunk.latin_word_diff(&input, &mut diff_input, &mut d);
+            let mut h = d.hunks();
+            let first = h.next().expect("missing first inner hunk");
+            assert!(first.is_pure_removal());
+            assert_eq!(
+                first.before,
+                0..words("    println(\"hello world\")\n").count() as u32
+            );
+            assert_eq!(first.after, 0..0);
+            assert_eq!(h.next(), None);
+            assert_eq!(hunks.next(), None);
 
-        let mut hunks = diff.hunks();
-        let hunk = hunks.next().expect("missing first hunk");
-        hunk.word_diff(&input, &mut diff_input, &mut d);
-        let mut h = d.hunks();
-        let first = h.next().expect("missing first inner hunk");
-        assert!(first.is_pure_removal());
-        assert_eq!(
-            first.before,
-            0..words("    println(\"hello world\")\n").count() as u32
-        );
-        assert_eq!(first.after, 0..0);
-        assert_eq!(h.next(), None);
-        assert_eq!(hunks.next(), None);
-
-        swap(&mut input.before, &mut input.after);
+            swap(&mut input.before, &mut input.after);
+        }
     }
-}
 
-#[test]
-fn hunk_word_diff_modify() {
-    let before = r#"fn foo() -> Bar {
+    #[test]
+    fn modify() {
+        let before = r#"fn foo() -> Bar {
     let mut foo = 2.0;
     foo *= 100 / 2;
 }"#;
-    let after = r#"fn foo() -> Bar {
+        let after = r#"fn foo() -> Bar {
     let mut foo = 3.0 * 2.0;
     foo += 100 / 2;
 }"#;
-    let mut input = InternedInput::new(before, after);
-    for algorithm in Algorithm::ALL {
-        let mut diff_input = InternedInput::default();
-        let mut d = Diff::default();
+        let mut input = InternedInput::new(before, after);
+        for algorithm in Algorithm::ALL {
+            let mut diff_input = InternedInput::default();
+            let mut d = Diff::default();
 
-        println!("{algorithm:?}");
+            let mut diff = Diff::compute(algorithm, &input);
+            diff.postprocess_lines(&input);
 
-        let mut diff = Diff::compute(algorithm, &input);
-        diff.postprocess_lines(&input);
-
-        let mut hunks = diff.hunks();
-        let hunk = hunks.next().expect("missing first hunk");
-        hunk.word_diff(&input, &mut diff_input, &mut d);
-        let mut h = d.hunks();
-        let first = h.next().expect("missing first inner hunk");
-        assert!(first.is_pure_insertion());
-        let off = words("    let mut foo = ").count() as u32;
-        assert_eq!(first.before, off..off);
-        let ins = words("3.0 * ").count() as u32;
-        assert_eq!(first.after, off..ins + off);
-        let second = h.next().expect("missing second inner hunk");
-        let off = words(
-            r#"    let mut foo = 2.0;
+            let mut hunks = diff.hunks();
+            let hunk = hunks.next().expect("missing first hunk");
+            hunk.latin_word_diff(&input, &mut diff_input, &mut d);
+            let mut h = d.hunks();
+            let first = h.next().expect("missing first inner hunk");
+            assert!(first.is_pure_insertion());
+            let off = words("    let mut foo = ").count() as u32;
+            assert_eq!(first.before, off..off);
+            let ins = words("3.0 * ").count() as u32;
+            assert_eq!(first.after, off..ins + off);
+            let second = h.next().expect("missing second inner hunk");
+            let off = words(
+                r#"    let mut foo = 2.0;
     foo "#,
-        )
-        .count() as u32;
-        assert_eq!(second.before, off..1 + off);
-        assert_eq!(second.after, ins + off..1 + ins + off);
-        assert_eq!(h.next(), None);
-        assert_eq!(hunks.next(), None);
+            )
+            .count() as u32;
+            assert_eq!(second.before, off..1 + off);
+            assert_eq!(second.after, ins + off..1 + ins + off);
+            assert_eq!(h.next(), None);
+            assert_eq!(hunks.next(), None);
 
-        swap(&mut input.before, &mut input.after);
+            swap(&mut input.before, &mut input.after);
 
-        let mut diff = Diff::compute(algorithm, &input);
-        diff.postprocess_lines(&input);
+            let mut diff = Diff::compute(algorithm, &input);
+            diff.postprocess_lines(&input);
 
-        let mut hunks = diff.hunks();
-        let hunk = hunks.next().expect("missing first hunk");
-        hunk.word_diff(&input, &mut diff_input, &mut d);
-        let mut h = d.hunks();
-        let first = h.next().expect("missing first inner hunk");
-        assert!(first.is_pure_removal());
-        let off = words("    let mut foo = ").count() as u32;
-        let rem = words("3.0 * ").count() as u32;
-        assert_eq!(first.before, off..rem + off);
-        assert_eq!(first.after, off..off);
-        let second = h.next().expect("missing second inner hunk");
-        let off = words(
-            r#"    let mut foo = 2.0;
+            let mut hunks = diff.hunks();
+            let hunk = hunks.next().expect("missing first hunk");
+            hunk.latin_word_diff(&input, &mut diff_input, &mut d);
+            let mut h = d.hunks();
+            let first = h.next().expect("missing first inner hunk");
+            assert!(first.is_pure_removal());
+            let off = words("    let mut foo = ").count() as u32;
+            let rem = words("3.0 * ").count() as u32;
+            assert_eq!(first.before, off..rem + off);
+            assert_eq!(first.after, off..off);
+            let second = h.next().expect("missing second inner hunk");
+            let off = words(
+                r#"    let mut foo = 2.0;
     foo "#,
-        )
-        .count() as u32;
-        assert_eq!(second.before, rem + off..1 + rem + off);
-        assert_eq!(second.after, off..1 + off);
-        assert_eq!(h.next(), None);
-        assert_eq!(hunks.next(), None);
+            )
+            .count() as u32;
+            assert_eq!(second.before, rem + off..1 + rem + off);
+            assert_eq!(second.after, off..1 + off);
+            assert_eq!(h.next(), None);
+            assert_eq!(hunks.next(), None);
 
-        swap(&mut input.before, &mut input.after);
+            swap(&mut input.before, &mut input.after);
+        }
     }
 }
 

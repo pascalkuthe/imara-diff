@@ -421,34 +421,35 @@ impl Hunk {
     }
 
     /// Performs a word-diff of the hunk.
-    /// 
-    /// This requires passing the original [`InternedInput`] in order to look up
-    /// the tokens of the current hunk. Each token is split into words using the
-    /// built-in [`words`] tokenizer. The resulting word tokens are stored in a
-    /// second [`InternedInput`], and a [`Diff`] is computed on them.
-    /// 
-    /// For performance reasons, this second [`InternedInput`] as well as the
-    /// computed [`Diff`] need to be passed as parameters so that they can be
+    ///
+    /// This requires passing the original [`input`](InternedInput) in order to look up
+    /// the tokens of the current hunk, which typically are lines.
+    /// Each token is split into words using the built-in [`words`] tokenizer.
+    /// The resulting word tokens are stored in a second [`diff_input`](InternedInput),
+    /// and a [`diff`](Diff) is computed on them, with basic post-processing applied.
+    ///
+    /// For performance reasons, this second [`diff_input`](InternedInput) as well as
+    /// the computed [`diff`](Diff) need to be passed as parameters so that they can be
     /// re-used when iterating over hunks. Note that word tokens are always
-    /// added but never removed from the interner. Consider clearing it every
-    /// `n` iterations if you expect your input to have a large vocabulary.
-    /// 
+    /// added but never removed from the interner. Consider clearing it if you expect
+    /// your input to have a large vocabulary.
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use imara_diff::{InternedInput, Diff, Algorithm};
     /// // Compute diff normally
     /// let before = "before text";
     /// let after = "after text";
-    /// let mut input = InternedInput::new(before, after);
-    /// let mut diff = Diff::compute(Algorithm::Histogram, &input);
-    /// diff.postprocess_lines(&input);
-    /// 
+    /// let mut lines = InternedInput::new(before, after);
+    /// let mut diff = Diff::compute(Algorithm::Histogram, &lines);
+    /// diff.postprocess_lines(&lines);
+    ///
     /// // Compute word-diff per hunk, reusing allocations across iterations
     /// let mut hunk_diff_input = InternedInput::default();
     /// let mut hunk_diff = Diff::default();
     /// for hunk in diff.hunks() {
-    ///   hunk.word_diff(&input, &mut hunk_diff_input, &mut hunk_diff);
+    ///   hunk.latin_word_diff(&lines, &mut hunk_diff_input, &mut hunk_diff);
     ///   let added = hunk_diff.count_additions();
     ///   let removed = hunk_diff.count_removals();
     ///   println!("word-diff of this hunk has {added} additions and {removed} removals");
@@ -456,29 +457,29 @@ impl Hunk {
     ///   hunk_diff_input.clear();
     /// }
     /// ```
-    pub fn word_diff<'a>(
+    pub fn latin_word_diff<'a>(
         &self,
         input: &InternedInput<&'a str>,
-        diff_input: &mut InternedInput<&'a str>,
+        word_tokens: &mut InternedInput<&'a str>,
         diff: &mut Diff,
     ) {
         let Hunk { before, after } = self.clone();
-        diff_input.update_before(
+        word_tokens.update_before(
             before
                 .map(|index| input.before[index as usize])
                 .map(|token| input.interner[token])
                 .flat_map(|line| words(line)),
         );
-        diff_input.update_after(
+        word_tokens.update_after(
             after
                 .map(|index| input.after[index as usize])
                 .map(|token| input.interner[token])
                 .flat_map(|line| words(line)),
         );
         diff.removed.clear();
-        diff.removed.resize(diff_input.before.len(), false);
+        diff.removed.resize(word_tokens.before.len(), false);
         diff.added.clear();
-        diff.added.resize(diff_input.after.len(), false);
+        diff.added.resize(word_tokens.after.len(), false);
         if self.is_pure_removal() {
             diff.removed.fill(true);
         } else if self.is_pure_insertion() {
@@ -486,11 +487,11 @@ impl Hunk {
         } else {
             diff.compute_with(
                 Algorithm::Myers,
-                &diff_input.before,
-                &diff_input.after,
-                diff_input.interner.num_tokens(),
+                &word_tokens.before,
+                &word_tokens.after,
+                word_tokens.interner.num_tokens(),
             );
-            diff.postprocess_no_heuristic(diff_input);
+            diff.postprocess_no_heuristic(word_tokens);
         }
     }
 }
