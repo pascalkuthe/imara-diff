@@ -25,6 +25,11 @@ pub fn words(data: &str) -> Words<'_> {
     Words(data)
 }
 
+/// Returns a [`TokenSource`] that uses the characters in `data` as Tokens
+pub fn chars(data: &str) -> impl Iterator<Item = char> + Clone + '_ {
+     data.chars()
+}
+
 /// Returns a [`TokenSource`] that uses the lines in `data` as Tokens. The newline
 /// separator (`\r\n` or `\n`) is included in the emitted tokens. This means that changing
 /// the newline separator from `\r\n` to `\n` (or omitting it fully on the last line) is
@@ -136,6 +141,20 @@ impl<'a> TokenSource for Words<'a> {
 
     fn estimate_tokens(&self) -> u32 {
         (self.0.len() / 3) as u32
+    }
+}
+
+impl<'a> TokenSource for std::str::Chars<'a> {
+    type Token = char;
+
+    type Tokenizer = Self;
+
+    fn tokenize(&self) -> Self::Tokenizer {
+        self.clone()
+    }
+
+    fn estimate_tokens(&self) -> u32 {
+        self.as_str().len() as u32
     }
 }
 
