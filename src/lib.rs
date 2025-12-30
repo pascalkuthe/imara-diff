@@ -414,7 +414,7 @@ impl Hunk {
         self.after.is_empty()
     }
 
-    /// Performs a word-diff of the hunk.
+    /// Performs a word-diff on this hunk.
     ///
     /// This requires passing the original [`input`](InternedInput) in order to look up
     /// the tokens of the current hunk, which typically are lines.
