@@ -145,7 +145,10 @@
 use std::ops::Range;
 use std::slice;
 
-use crate::util::{strip_common_postfix, strip_common_prefix};
+use crate::{
+    sources::words,
+    util::{strip_common_postfix, strip_common_prefix},
+};
 
 pub use crate::slider_heuristic::{
     IndentHeuristic, IndentLevel, NoSliderHeuristic, SliderHeuristic,
@@ -160,12 +163,11 @@ mod myers;
 mod postprocess;
 mod slider_heuristic;
 pub mod sources;
+#[cfg(test)]
+mod tests;
 #[cfg(feature = "unified_diff")]
 mod unified_diff;
 mod util;
-
-#[cfg(test)]
-mod tests;
 
 /// `imara-diff` supports multiple different algorithms
 /// for computing an edit sequence.
@@ -223,11 +225,6 @@ pub enum Algorithm {
     /// a minimal edit sequence.
     /// This can mean significant slowdown in pathological cases.
     MyersMinimal,
-}
-
-impl Algorithm {
-    #[cfg(test)]
-    const ALL: [Self; 2] = [Algorithm::Histogram, Algorithm::Myers];
 }
 
 /// Represents the difference between two sequences of tokens.
@@ -415,6 +412,81 @@ impl Hunk {
     /// Returns whether tokens are only removed and not inserted in this hunk.
     pub fn is_pure_removal(&self) -> bool {
         self.after.is_empty()
+    }
+
+    /// Performs a word-diff on this hunk.
+    ///
+    /// This requires passing the original [`input`](InternedInput) in order to look up
+    /// the tokens of the current hunk, which typically are lines.
+    /// Each token is split into words using the built-in [`words`] tokenizer.
+    /// The resulting word tokens are stored in a second [`diff_input`](InternedInput),
+    /// and a [`diff`](Diff) is computed on them, with basic post-processing applied.
+    ///
+    /// For performance reasons, this second [`diff_input`](InternedInput) as well as
+    /// the computed [`diff`](Diff) need to be passed as parameters so that they can be
+    /// re-used when iterating over hunks. Note that word tokens are always
+    /// added but never removed from the interner. Consider clearing it if you expect
+    /// your input to have a large vocabulary.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use imara_diff::{InternedInput, Diff, Algorithm};
+    /// // Compute diff normally
+    /// let before = "before text";
+    /// let after = "after text";
+    /// let mut lines = InternedInput::new(before, after);
+    /// let mut diff = Diff::compute(Algorithm::Histogram, &lines);
+    /// diff.postprocess_lines(&lines);
+    ///
+    /// // Compute word-diff per hunk, reusing allocations across iterations
+    /// let mut hunk_diff_input = InternedInput::default();
+    /// let mut hunk_diff = Diff::default();
+    /// for hunk in diff.hunks() {
+    ///   hunk.latin_word_diff(&lines, &mut hunk_diff_input, &mut hunk_diff);
+    ///   let added = hunk_diff.count_additions();
+    ///   let removed = hunk_diff.count_removals();
+    ///   println!("word-diff of this hunk has {added} additions and {removed} removals");
+    ///   // optionally, clear the interner:
+    ///   hunk_diff_input.clear();
+    /// }
+    /// ```
+    pub fn latin_word_diff<'a>(
+        &self,
+        input: &InternedInput<&'a str>,
+        word_tokens: &mut InternedInput<&'a str>,
+        diff: &mut Diff,
+    ) {
+        let Hunk { before, after } = self.clone();
+        word_tokens.update_before(
+            before
+                .map(|index| input.before[index as usize])
+                .map(|token| input.interner[token])
+                .flat_map(|line| words(line)),
+        );
+        word_tokens.update_after(
+            after
+                .map(|index| input.after[index as usize])
+                .map(|token| input.interner[token])
+                .flat_map(|line| words(line)),
+        );
+        diff.removed.clear();
+        diff.removed.resize(word_tokens.before.len(), false);
+        diff.added.clear();
+        diff.added.resize(word_tokens.after.len(), false);
+        if self.is_pure_removal() {
+            diff.removed.fill(true);
+        } else if self.is_pure_insertion() {
+            diff.added.fill(true);
+        } else {
+            diff.compute_with(
+                Algorithm::Myers,
+                &word_tokens.before,
+                &word_tokens.after,
+                word_tokens.interner.num_tokens(),
+            );
+            diff.postprocess_no_heuristic(word_tokens);
+        }
     }
 }
 

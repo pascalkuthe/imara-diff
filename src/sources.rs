@@ -17,6 +17,14 @@ pub fn lines(data: &str) -> Lines<'_> {
     Lines(ByteLines(data.as_bytes()))
 }
 
+/// Returns a [`TokenSource`] that uses the words in `data` as Tokens. A word is
+/// a sequence of alphanumeric characters as determined by
+/// `char::is_alphanumeric`, or a sequence of just the space character ' '. Any
+/// other characters are their own word.
+pub fn words(data: &str) -> Words<'_> {
+    Words(data)
+}
+
 /// Returns a [`TokenSource`] that uses the lines in `data` as Tokens. The newline
 /// separator (`\r\n` or `\n`) is included in the emitted tokens. This means that changing
 /// the newline separator from `\r\n` to `\n` (or omitting it fully on the last line) is
@@ -81,6 +89,53 @@ impl<'a> TokenSource for Lines<'a> {
 
     fn estimate_tokens(&self) -> u32 {
         self.0.estimate_tokens()
+    }
+}
+
+/// A [`TokenSource`] that returns the words of a string as tokens. See
+/// [`words`] for details.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Words<'a>(&'a str);
+
+impl<'a> Iterator for Words<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0.is_empty() {
+            return None;
+        }
+
+        let initial = self.0.chars().next().unwrap();
+        let word_len = if initial == ' ' {
+            self.0
+                .char_indices()
+                .find(|(_, c)| *c != ' ')
+                .map_or(self.0.len(), |(index, _)| index)
+        } else if initial.is_alphanumeric() {
+            self.0
+                .char_indices()
+                .find(|(_, c)| !c.is_alphanumeric() && *c != '_')
+                .map_or(self.0.len(), |(index, _)| index)
+        } else {
+            initial.len_utf8()
+        };
+
+        let (word, rem) = self.0.split_at(word_len);
+        self.0 = rem;
+        Some(word)
+    }
+}
+impl<'a> TokenSource for Words<'a> {
+    type Token = &'a str;
+
+    type Tokenizer = Self;
+
+    fn tokenize(&self) -> Self::Tokenizer {
+        *self
+    }
+
+    fn estimate_tokens(&self) -> u32 {
+        (self.0.len() / 3) as u32
     }
 }
 
