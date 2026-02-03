@@ -1,0 +1,43 @@
+[package]
+name = "imara-diff-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
+
+[dependencies.imara-diff]
+path = ".."
+features = ["unified_diff"]
+
+[[bin]]
+name = "comprehensive_diff"
+path = "fuzz_targets/comprehensive_diff.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "diff_compute_with"
+path = "fuzz_targets/diff_compute_with.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "postprocess_heuristics"
+path = "fuzz_targets/postprocess_heuristics.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "unified_diff_printer"
+path = "fuzz_targets/unified_diff_printer.rs"
+test = false
+doc = false
+bench = false

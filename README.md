@@ -6,7 +6,7 @@
 
 `imara-diff` is a solid (imara in swahili) diff library for rust.
 Solid refers to the fact that imara-diff provides very good runtime performance even
-in pathologic cases so that your application never appears to freeze while waiting on a diff.
+in pathological cases so that your application never appears to freeze while waiting on a diff.
 The performance improvements are achieved using battle tested heuristics used in gnu-diff and git
 that are known to perform well while still providing good results. 
 
@@ -86,7 +86,7 @@ The sourcecode of the rust compiler, standard library and various related toolin
 <img src='plots/rust_comparison.svg' width="700">
 <img src='plots/rust_speedup.svg' width="700">
 
-### VScode
+### VSCode
 
 The sourcecode of the vscode editor.
 
@@ -106,6 +106,9 @@ The sourcecode of the helix editor.
 <img src='plots/helix_comparison.svg' width="700">
 <img src='plots/helix_speedup.svg' width="700">
 
+## Testing
+
+`imara-diff` includes comprehensive fuzz testing using [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) to ensure robustness against arbitrary inputs. Fuzz tests cover all major algorithms (Myers, Histogram, MyersMinimal), postprocessing with different heuristics, and unified diff printing. See the [fuzz/README.md](fuzz/README.md) for more details on running fuzz tests locally.
 
 ## Stability Policy
 

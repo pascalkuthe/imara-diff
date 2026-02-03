@@ -5,10 +5,17 @@ use crate::intern::Token;
 use crate::myers::preprocess::PreprocessedFile;
 use crate::util::common_edges;
 
+/// A slice of a preprocessed file used during the Myers algorithm's divide-and-conquer.
+///
+/// This structure allows the algorithm to work on subproblems while maintaining
+/// references to the original file's token indices and change tracking.
 #[derive(Default)]
 pub struct FileSlice<'a> {
+    /// The tokens in this slice.
     pub tokens: &'a [Token],
+    /// Maps from slice positions back to original file positions.
     indices: &'a [u32],
+    /// Tracks which tokens in the original file have changed.
     changed: &'a mut [bool],
 }
 

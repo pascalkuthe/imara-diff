@@ -1,6 +1,7 @@
 use crate::intern::Token;
 use crate::Hunk;
 
+/// Computes the number of common tokens at the start of two sequences.
 pub fn common_prefix(file1: &[Token], file2: &[Token]) -> u32 {
     let mut off = 0;
     for (token1, token2) in file1.iter().zip(file2) {
@@ -12,6 +13,7 @@ pub fn common_prefix(file1: &[Token], file2: &[Token]) -> u32 {
     off
 }
 
+/// Computes the number of common tokens at the end of two sequences.
 pub fn common_postfix(file1: &[Token], file2: &[Token]) -> u32 {
     let mut off = 0;
     for (token1, token2) in file1.iter().rev().zip(file2.iter().rev()) {
@@ -23,12 +25,14 @@ pub fn common_postfix(file1: &[Token], file2: &[Token]) -> u32 {
     off
 }
 
+/// Computes both the common prefix and postfix lengths of two sequences.
 pub fn common_edges(file1: &[Token], file2: &[Token]) -> (u32, u32) {
     let prefix = common_prefix(file1, file2);
     let postfix = common_postfix(&file1[prefix as usize..], &file2[prefix as usize..]);
     (prefix, postfix)
 }
 
+/// Removes the common prefix from both sequences and returns its length.
 pub fn strip_common_prefix(file1: &mut &[Token], file2: &mut &[Token]) -> u32 {
     let off = common_prefix(file1, file2);
     *file1 = &file1[off as usize..];
@@ -36,6 +40,7 @@ pub fn strip_common_prefix(file1: &mut &[Token], file2: &mut &[Token]) -> u32 {
     off
 }
 
+/// Removes the common postfix from both sequences and returns its length.
 pub fn strip_common_postfix(file1: &mut &[Token], file2: &mut &[Token]) -> u32 {
     let off = common_postfix(file1, file2);
     *file1 = &file1[..file1.len() - off as usize];
@@ -43,6 +48,7 @@ pub fn strip_common_postfix(file1: &mut &[Token], file2: &mut &[Token]) -> u32 {
     off
 }
 
+/// Computes an approximation of the square root using bit operations.
 pub fn sqrt(val: usize) -> u32 {
     let nbits = (usize::BITS - val.leading_zeros()) / 2;
     1 << nbits
@@ -79,6 +85,7 @@ impl Hunk {
     }
 }
 
+/// Finds the offset to the next changed token starting from the given position.
 pub fn find_next_change(changes: &[bool], pos: u32) -> Option<u32> {
     changes[pos as usize..]
         .iter()
@@ -86,6 +93,7 @@ pub fn find_next_change(changes: &[bool], pos: u32) -> Option<u32> {
         .map(|off| off as u32)
 }
 
+/// Finds the end position of a hunk of changed tokens starting from the given position.
 pub fn find_hunk_end(changes: &[bool], pos: u32) -> u32 {
     pos + changes[pos as usize..]
         .iter()
@@ -93,6 +101,7 @@ pub fn find_hunk_end(changes: &[bool], pos: u32) -> u32 {
         .count() as u32
 }
 
+/// Finds the start position of a hunk of changed tokens ending at the given position.
 pub fn find_hunk_start(changes: &[bool], pos: u32) -> u32 {
     pos - changes[..pos as usize]
         .iter()

@@ -1,3 +1,8 @@
+//! Utilities for creating token sources from common data types.
+//!
+//! This module provides implementations of [`TokenSource`] for
+//! strings and byte slices, splitting them into lines by default.
+
 use std::str::from_utf8_unchecked;
 
 use memchr::memchr;
@@ -77,7 +82,7 @@ impl<'a> Iterator for Lines<'a> {
     }
 }
 
-/// By default a line diff is produced for a string
+/// By default, a line diff is produced for a string
 impl<'a> TokenSource for Lines<'a> {
     type Token = &'a str;
 
@@ -172,7 +177,7 @@ impl<'a> Iterator for ByteLines<'a> {
     }
 }
 
-/// By default a line diff is produced for a string
+/// By default, a line diff is produced for a string
 impl<'a> TokenSource for ByteLines<'a> {
     type Token = &'a [u8];
 
