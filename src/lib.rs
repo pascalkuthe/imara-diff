@@ -417,17 +417,18 @@ impl Hunk {
 
     /// Performs a word-diff on this hunk.
     ///
-    /// This requires passing the original [`input`](InternedInput) in order to look up
-    /// the tokens of the current hunk, which typically are lines.
-    /// Each token is split into words using the built-in [`words`] tokenizer.
-    /// The resulting word tokens are stored in a second [`diff_input`](InternedInput),
-    /// and a [`diff`](Diff) is computed on them, with basic post-processing applied.
+    /// This requires passing the original [`input`](InternedInput) in order to
+    /// look up the tokens of the current hunk, which typically are lines. Each
+    /// token is split into words using the built-in [`words`] tokenizer. The
+    /// resulting word tokens are stored in a second
+    /// [`word_tokens`](InternedInput), and a [`diff`](Diff) is computed on
+    /// them, with basic post-processing applied.
     ///
-    /// For performance reasons, this second [`diff_input`](InternedInput) as well as
-    /// the computed [`diff`](Diff) need to be passed as parameters so that they can be
-    /// re-used when iterating over hunks. Note that word tokens are always
-    /// added but never removed from the interner. Consider clearing it if you expect
-    /// your input to have a large vocabulary.
+    /// For performance reasons, this second [`word_tokens`](InternedInput) as
+    /// well as the computed [`diff`](Diff) need to be passed as parameters so
+    /// that they can be re-used when iterating over hunks. Note that word
+    /// tokens are always added but never removed from the interner. Consider
+    /// clearing it if you expect your input to have a large vocabulary.
     ///
     /// # Examples
     ///
