@@ -27,7 +27,7 @@ pub fn words(data: &str) -> Words<'_> {
 
 /// Returns a [`TokenSource`] that uses the characters in `data` as Tokens
 pub fn chars(data: &str) -> impl Iterator<Item = char> + Clone + '_ {
-     data.chars()
+    data.chars()
 }
 
 /// Returns a [`TokenSource`] that uses the lines in `data` as Tokens. The newline
