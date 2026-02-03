@@ -528,13 +528,13 @@ impl Hunk {
             before
                 .map(|index| input.before[index as usize])
                 .map(|token| input.interner[token])
-                .flat_map(|line| tokenizer(line)),
+                .flat_map(&tokenizer),
         );
         diff_input.update_after(
             after
                 .map(|index| input.after[index as usize])
                 .map(|token| input.interner[token])
-                .flat_map(|line| tokenizer(line)),
+                .flat_map(&tokenizer),
         );
         diff.removed.clear();
         diff.removed.resize(diff_input.before.len(), false);
