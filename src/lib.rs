@@ -462,7 +462,7 @@ impl Hunk {
         self.granular_diff(words, input, word_tokens, diff)
     }
 
-    /// Performs a character-diff of the hunk
+    /// Performs a character-diff of the hunk.
     ///
     /// This requires passing the original [`input`](InternedInput) in order to
     /// look up the tokens of the current hunk, which typically are lines or
