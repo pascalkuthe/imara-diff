@@ -135,7 +135,7 @@ fn should_prune_common_line(token_status: &[Occurrences], pos: usize) -> bool {
     let mut unmatched_before = 0;
     let mut common_before = 0;
 
-    let start = if pos > WINDOW_SIZE { WINDOW_SIZE } else { 0 };
+    let start = pos.saturating_sub(WINDOW_SIZE);
     for status in token_status[start..pos].iter().rev() {
         match status {
             Occurrences::None => {
@@ -175,4 +175,24 @@ fn should_prune_common_line(token_status: &[Occurrences], pos: usize) -> bool {
     let unmatched = unmatched_before + unmatched_after;
 
     unmatched > 3 * common
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{should_prune_common_line, Occurrences};
+
+    #[test]
+    fn common_line_pruning_ignores_distant_context() {
+        let mut token_status = vec![Occurrences::Some; 700];
+        token_status[100..400].fill(Occurrences::None);
+        token_status[400..450].fill(Occurrences::None);
+        token_status[450..500].fill(Occurrences::Common);
+        token_status[500..550].fill(Occurrences::Common);
+        token_status[550..600].fill(Occurrences::None);
+
+        assert!(
+            !should_prune_common_line(&token_status, 500),
+            "only the last 100 items before the current line should contribute to the backward scan"
+        );
+    }
 }
