@@ -1,4 +1,5 @@
-use std::ptr::NonNull;
+use alloc::boxed::Box;
+use core::ptr::NonNull;
 
 use crate::intern::Token;
 use crate::myers::middle_snake::{MiddleSnakeSearch, SearchResult};

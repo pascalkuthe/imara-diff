@@ -1,5 +1,6 @@
-use std::hash::{BuildHasher as _, Hash};
-use std::ops::Index;
+use alloc::vec::Vec;
+use core::hash::{BuildHasher as _, Hash};
+use core::ops::Index;
 
 use hashbrown::hash_table::{Entry, HashTable};
 use hashbrown::DefaultHashBuilder as RandomState;

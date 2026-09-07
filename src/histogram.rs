@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::histogram::lcs::find_lcs;
 use crate::histogram::list_pool::{ListHandle, ListPool};
 use crate::intern::Token;
