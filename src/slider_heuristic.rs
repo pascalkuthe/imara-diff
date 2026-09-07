@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
-use std::hash::Hash;
-use std::ops::{Add, Range};
+use core::cmp::Ordering;
+use core::hash::Hash;
+use core::ops::{Add, Range};
 
 use crate::intern::Token;
 

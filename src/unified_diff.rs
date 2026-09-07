@@ -1,5 +1,6 @@
-use std::fmt::{self, Display};
-use std::hash::Hash;
+use alloc::string::String;
+use core::fmt::{self, Display};
+use core::hash::Hash;
 
 use crate::intern::{InternedInput, Interner, Token};
 use crate::Diff;

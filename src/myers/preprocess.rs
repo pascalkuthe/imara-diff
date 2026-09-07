@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::intern::Token;
 use crate::myers::sqrt;
 

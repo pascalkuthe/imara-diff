@@ -1,5 +1,5 @@
-use std::mem::take;
-use std::ops::RangeBounds;
+use core::mem::take;
+use core::ops::RangeBounds;
 
 use crate::intern::Token;
 use crate::myers::preprocess::PreprocessedFile;
@@ -44,15 +44,15 @@ impl<'a> FileSlice<'a> {
 
     pub fn slice<R: RangeBounds<u32>>(self, range: R) -> Self {
         let start = match range.start_bound() {
-            std::ops::Bound::Included(&start) => start,
-            std::ops::Bound::Excluded(&start) => start + 1,
-            std::ops::Bound::Unbounded => 0,
+            core::ops::Bound::Included(&start) => start,
+            core::ops::Bound::Excluded(&start) => start + 1,
+            core::ops::Bound::Unbounded => 0,
         };
 
         let end = match range.end_bound() {
-            std::ops::Bound::Included(&end) => end + 1,
-            std::ops::Bound::Excluded(&end) => end,
-            std::ops::Bound::Unbounded => self.len(),
+            core::ops::Bound::Included(&end) => end + 1,
+            core::ops::Bound::Excluded(&end) => end,
+            core::ops::Bound::Unbounded => self.len(),
         };
 
         Self {

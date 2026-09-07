@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![no_std]
 //! Imara-diff is a solid (imara in Swahili) diff library for Rust.
 //! Solid refers to the fact that imara-diff provides very good runtime performance even
 //! in pathological cases so that your application never appears to freeze while waiting on a diff.
@@ -140,10 +141,13 @@
 //! +// foo
 //! "#
 //! );
-//! ```
 
-use std::ops::Range;
-use std::slice;
+#[macro_use]
+extern crate alloc;
+
+use alloc::vec::Vec;
+use core::ops::Range;
+use core::slice;
 
 use crate::{
     sources::words,
@@ -240,8 +244,8 @@ pub struct Diff {
     added: Vec<bool>,
 }
 
-impl std::fmt::Debug for Diff {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Diff {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_list().entries(self.hunks()).finish()
     }
 }

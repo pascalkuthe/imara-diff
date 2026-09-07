@@ -9,6 +9,7 @@ license = "Apache-2.0"
 description = "A high performance library for computing diffs."
 repository  = "https://github.com/pascalkuthe/imara-diff"
 keywords = ["diff", "difference", "myers", "compare", "changes"]
+categories = ["no-std", "algorithms"]
 readme = "README.md"
 exclude = [
     "tests",
@@ -18,10 +19,11 @@ exclude = [
 
 [dependencies]
 hashbrown = { version = ">=0.15,<=0.16", default-features = false, features = ["default-hasher", "inline-more"] }
-memchr = "2.7.4"
+memchr = { version = "2.7.4", default-features = false }
 
 [features]
-default = ["unified_diff"]
+default = ["std", "unified_diff"]
+std = ["memchr/std"]
 unified_diff = []
 
 [dev-dependencies]

@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::histogram::MAX_CHAIN_LEN;
 
 /// A small list of entity references allocated from a pool.
@@ -215,7 +217,7 @@ impl ListHandle {
         let idx = self.index as usize;
         match self.len(pool) {
             0 => &[],
-            1 => std::slice::from_ref(&self.index),
+            1 => core::slice::from_ref(&self.index),
             len => &pool.data[idx..idx + len as usize],
         }
     }

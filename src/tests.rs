@@ -1,3 +1,5 @@
+use alloc::string::ToString;
+
 use crate::{Algorithm, BasicLineDiffPrinter, Diff, InternedInput, UnifiedDiffConfig};
 use expect_test::expect;
 

@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use core::ptr::NonNull;
 
 use crate::myers::slice::FileSlice;
 use crate::util::{common_postfix, common_prefix};
