@@ -1,4 +1,7 @@
-use crate::{Algorithm, BasicLineDiffPrinter, Diff, InternedInput, UnifiedDiffConfig};
+use crate::{Algorithm, Diff, InternedInput};
+#[cfg(feature = "unified_diff")]
+use crate::{BasicLineDiffPrinter, UnifiedDiffConfig};
+#[cfg(feature = "unified_diff")]
 use expect_test::expect;
 
 #[test]
@@ -13,7 +16,8 @@ fn myers_is_even() {
     // is buggy in more subtle ways
     cov_mark::check_count!(SPLIT_SEARCH_ITER, 15);
     let input = InternedInput::new(before, after);
-    let diff = Diff::compute(Algorithm::Myers, &input);
+    let _diff = Diff::compute(Algorithm::Myers, &input);
+    #[cfg(feature = "unified_diff")]
     expect![[r#"
         @@ -1,5 +1,5 @@
         -a
@@ -25,7 +29,7 @@ fn myers_is_even() {
         +x
     "#]]
     .assert_eq(
-        &diff
+        &_diff
             .unified_diff(
                 &BasicLineDiffPrinter(&input.interner),
                 UnifiedDiffConfig::default(),
@@ -46,7 +50,8 @@ fn myers_is_odd() {
     // iterations increases
     cov_mark::check_count!(SPLIT_SEARCH_ITER, 9);
     let input = InternedInput::new(before, after);
-    let diff = Diff::compute(Algorithm::Myers, &input);
+    let _diff = Diff::compute(Algorithm::Myers, &input);
+    #[cfg(feature = "unified_diff")]
     expect![[r#"
         @@ -1,5 +1,4 @@
         -a
@@ -57,7 +62,7 @@ fn myers_is_odd() {
         -x
     "#]]
     .assert_eq(
-        &diff
+        &_diff
             .unified_diff(
                 &BasicLineDiffPrinter(&input.interner),
                 UnifiedDiffConfig::default(),

@@ -1,15 +1,18 @@
 use std::fs::read_to_string;
+#[cfg(feature = "unified_diff")]
 use std::mem::swap;
 use std::path::PathBuf;
 
+#[cfg(feature = "unified_diff")]
 use expect_test::{expect, expect_file};
 // use git::bstr::BStr;
 // use git_repository as git;
 
 use imara_diff::sources::words;
-use imara_diff::BasicLineDiffPrinter;
 use imara_diff::InternedInput;
-use imara_diff::{Algorithm, Diff, UnifiedDiffConfig};
+use imara_diff::{Algorithm, Diff};
+#[cfg(feature = "unified_diff")]
+use imara_diff::{BasicLineDiffPrinter, UnifiedDiffConfig};
 
 const ALL_ALGORITHMS: [Algorithm; 2] = [Algorithm::Histogram, Algorithm::Myers];
 
@@ -23,6 +26,7 @@ fn words_tokenizer() {
     );
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 fn replace() {
     let before = r#"fn foo() -> Bar{
@@ -69,6 +73,7 @@ fn foo() -> Bar{
     }
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 fn identical_files() {
     let file = r#"fn foo() -> Bar{
@@ -92,6 +97,7 @@ fn identical_files() {
     }
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 fn simple_insert() {
     let before = r#"fn foo() -> Bar{
@@ -152,6 +158,7 @@ fn simple_insert() {
     }
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 fn unified_diff_context_lines_near_input_start_and_end() {
     let before = r#"a
@@ -394,6 +401,7 @@ pub fn project_root() -> PathBuf {
     res
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 #[cfg(not(miri))]
 fn hand_checked_unidiffs() {
@@ -444,6 +452,7 @@ fn complex_diffs() {
     }
 }
 
+#[cfg(feature = "unified_diff")]
 #[test]
 fn postprocess() {
     let before = r#"

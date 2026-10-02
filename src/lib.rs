@@ -98,6 +98,10 @@
 //! take inspiration from the built-in printer.
 //!
 //! ```
+//! # #[cfg(not(feature = "unified_diff"))]
+//! # fn main() {}
+//! # #[cfg(feature = "unified_diff")]
+//! # fn main() {
 //! # use imara_diff::{InternedInput, Diff, Algorithm, BasicLineDiffPrinter, UnifiedDiffConfig};
 //! #
 //!
@@ -140,6 +144,7 @@
 //! +// foo
 //! "#
 //! );
+//! # }
 //! ```
 
 use std::ops::Range;
