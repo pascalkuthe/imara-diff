@@ -66,3 +66,31 @@ fn myers_is_odd() {
             .to_string(),
     );
 }
+
+#[test]
+fn cancel_unset_matches_compute() {
+    // With a cancel flag that is never set, the cancellable path must produce
+    // exactly the same edit script as the normal path.
+    let before = "a\nb\nc\nd\ne\nf\n";
+    let after = "a\nX\nc\nd\nY\nf\nZ\n";
+    let input = InternedInput::new(before, after);
+    let never = std::sync::atomic::AtomicBool::new(false);
+    for algorithm in [
+        Algorithm::Histogram,
+        Algorithm::Myers,
+        Algorithm::MyersMinimal,
+    ] {
+        let plain = Diff::compute(algorithm, &input);
+        let cancellable = Diff::compute_cancellable(algorithm, &input, &never);
+        assert_eq!(
+            plain.count_removals(),
+            cancellable.count_removals(),
+            "{algorithm:?}: removals differ"
+        );
+        assert_eq!(
+            plain.count_additions(),
+            cancellable.count_additions(),
+            "{algorithm:?}: additions differ"
+        );
+    }
+}
