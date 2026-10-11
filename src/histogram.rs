@@ -1,7 +1,9 @@
+use std::sync::atomic::AtomicBool;
+
 use crate::histogram::lcs::find_lcs;
 use crate::histogram::list_pool::{ListHandle, ListPool};
 use crate::intern::Token;
-use crate::myers;
+use crate::{is_cancelled, myers};
 
 mod lcs;
 mod list_pool;
@@ -33,9 +35,10 @@ pub fn diff(
     removed: &mut [bool],
     added: &mut [bool],
     num_tokens: u32,
+    cancel: Option<&AtomicBool>,
 ) {
     let mut histogram = Histogram::new(num_tokens);
-    histogram.run(before, after, removed, added);
+    histogram.run(before, after, removed, added, cancel);
 }
 
 impl Histogram {
@@ -70,8 +73,13 @@ impl Histogram {
         mut after: &[Token],
         mut removed: &mut [bool],
         mut added: &mut [bool],
+        cancel: Option<&AtomicBool>,
     ) {
         loop {
+            // The caller no longer wants the result; the partial diff is discarded.
+            if is_cancelled(cancel) {
+                return;
+            }
             if before.is_empty() {
                 added.fill(true);
                 return;
@@ -94,6 +102,7 @@ impl Histogram {
                         &after[..lcs.after_start as usize],
                         &mut removed[..lcs.before_start as usize],
                         &mut added[..lcs.after_start as usize],
+                        cancel,
                     );
 
                     // this is equivalent to (tail) recursion but implement as a loop for efficiency reasons
@@ -109,7 +118,7 @@ impl Histogram {
                     // we are diffing two extremely large repetitive files
                     // this is a worst case for histogram diff with O(N^2) performance
                     // fallback to myers to maintain linear time complexity
-                    myers::diff(before, after, removed, added, false);
+                    myers::diff(before, after, removed, added, false, cancel);
                     return;
                 }
             }

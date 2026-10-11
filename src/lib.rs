@@ -144,11 +144,19 @@
 
 use std::ops::Range;
 use std::slice;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{
     sources::words,
     util::{strip_common_postfix, strip_common_prefix},
 };
+
+/// Returns `true` when an optional cancellation flag is set. Checked at the top
+/// of each step of both algorithms' main loops.
+#[inline]
+pub(crate) fn is_cancelled(cancel: Option<&AtomicBool>) -> bool {
+    cancel.is_some_and(|c| c.load(Ordering::Relaxed))
+}
 
 pub use crate::slider_heuristic::{
     IndentHeuristic, IndentLevel, NoSliderHeuristic, SliderHeuristic,
@@ -260,14 +268,67 @@ impl Diff {
         diff
     }
 
+    /// Like [`Diff::compute`], but returns early once `cancel` is set to `true`.
+    ///
+    /// This is meant for callers that run the diff on a worker thread and may
+    /// stop needing the result, for example because the user moved on, or
+    /// because another algorithm racing on the same input finished first.
+    /// The flag is checked at the top of every step of the algorithm's main
+    /// loop, so cancellation latency is bounded by one step (one histogram
+    /// LCS search or one Myers middle-snake split) rather than the whole
+    /// computation. The check is a single relaxed atomic load per step and has
+    /// no measurable cost.
+    ///
+    /// When cancellation fires, the returned [`Diff`] is **incomplete and must
+    /// be discarded**; nothing about its contents is specified. With a flag
+    /// that is never set, the result is identical to [`Diff::compute`].
+    pub fn compute_cancellable<T>(
+        algorithm: Algorithm,
+        input: &InternedInput<T>,
+        cancel: &AtomicBool,
+    ) -> Diff {
+        let mut diff = Diff::default();
+        diff.compute_with_cancellable(
+            algorithm,
+            &input.before,
+            &input.after,
+            input.interner.num_tokens(),
+            cancel,
+        );
+        diff
+    }
+
     /// Computes an edit-script that transforms `before` into `after` using
     /// the specified `algorithm`.
     pub fn compute_with(
         &mut self,
         algorithm: Algorithm,
+        before: &[Token],
+        after: &[Token],
+        num_tokens: u32,
+    ) {
+        self.compute_with_impl(algorithm, before, after, num_tokens, None);
+    }
+
+    /// Like [`Diff::compute_with`], but cancellable. See [`Diff::compute_cancellable`].
+    pub fn compute_with_cancellable(
+        &mut self,
+        algorithm: Algorithm,
+        before: &[Token],
+        after: &[Token],
+        num_tokens: u32,
+        cancel: &AtomicBool,
+    ) {
+        self.compute_with_impl(algorithm, before, after, num_tokens, Some(cancel));
+    }
+
+    fn compute_with_impl(
+        &mut self,
+        algorithm: Algorithm,
         mut before: &[Token],
         mut after: &[Token],
         num_tokens: u32,
+        cancel: Option<&AtomicBool>,
     ) {
         assert!(
             before.len() < i32::MAX as usize,
@@ -290,9 +351,11 @@ impl Diff {
         let range = common_prefix..self.added.len() - common_postfix as usize;
         let added = &mut self.added[range];
         match algorithm {
-            Algorithm::Histogram => histogram::diff(before, after, removed, added, num_tokens),
-            Algorithm::Myers => myers::diff(before, after, removed, added, false),
-            Algorithm::MyersMinimal => myers::diff(before, after, removed, added, true),
+            Algorithm::Histogram => {
+                histogram::diff(before, after, removed, added, num_tokens, cancel)
+            }
+            Algorithm::Myers => myers::diff(before, after, removed, added, false, cancel),
+            Algorithm::MyersMinimal => myers::diff(before, after, removed, added, true, cancel),
         }
     }
 
